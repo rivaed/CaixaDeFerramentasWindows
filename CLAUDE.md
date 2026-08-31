@@ -7,10 +7,11 @@ opção complementar para quem quer tudo junto, não uma substituição. Arquivo
 dependências, Windows PowerShell 5.1 — mesmo padrão de todos os repos irmãos.
 
 **Projeto construído em fases** (script final gira em torno de 3000+ linhas). Estado atual:
-**Fase 1 concluída** (esqueleto: param() fundido, funções compartilhadas, detecção de
-versão do Windows). Fases 2-5 pendentes — ver "Ordem de execução" abaixo. Cada fase vira
-um push próprio para `main`; **nenhum `-Modo` está implementado ainda** nesta versão (todos
-saem com código 9 e aviso "ainda será implementado").
+**Fase 1 e Fase 2 concluídas** (esqueleto + `-Modo Faxina` funcional, provando o motor
+único de catálogo com os 11 itens do WinFaxina). Fases 3-5 pendentes — ver "Ordem de
+execução" abaixo. Cada fase vira um push próprio para `main`; **só `-Modo Faxina`
+executa lógica real** nesta versão — `Debloat`/`Tudo`/`Inicializacao`/`SafeBoot`/
+`AdminOculto`/`Diagnostico` ainda saem com código 9 e aviso "ainda será implementado".
 
 ## Arquitetura: duas famílias, não uma
 
@@ -134,10 +135,16 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
 ## Ordem de execução (ver plano completo salvo fora do repo, em
 `~/.claude/plans/tempos-atras-fiz-o-sharded-ritchie.md`, para o raciocínio completo)
 
-0. ~~Corrigir bug do `Get-AcaoDescricao` no WinFaxina~~ — feito, fora deste repo.
+0. ~~Corrigir bug do `Get-AcaoDescricao` no WinFaxina~~ — feito, fora deste repo (branch
+   `fix/get-acao-descricao-fila-impressao`, ainda não mesclada em main daquele repo —
+   aguarda instrução explícita de push, por convenção da sessão).
 1. ~~Esqueleto: param() fundido, funções compartilhadas, `Get-VersaoWindows`~~ — **feito**.
-2. Provar o modelo "um motor, `-Modo` pré-filtra `Categorias`" só com os 11 itens do
-   WinFaxina (`-Modo Faxina`) antes de tocar no catálogo maior do Debloat.
+2. ~~Provar o modelo "um motor, `-Modo` pré-filtra `Categorias`" só com os 11 itens do
+   WinFaxina (`-Modo Faxina`)~~ — **feito**. `Invoke-FaxinaItem` foi renomeado para
+   `Invoke-ItemCatalogo` (nome neutro — a Fase 3 estende o MESMO dispatcher com os
+   tipos do Debloat, não cria um novo). `$script:CategoriasPorModo` já existe com as
+   3 chaves (`Faxina`/`Debloat`/`Tudo`) — Fase 3 só precisa preencher o catálogo, não
+   mexer no mecanismo de filtro.
 3. Fundir Debloat10+Debloat11 no catálogo (ver seção acima); ligar `-Modo Debloat`/`Tudo`.
 4. Portar Grupo B do mais seguro ao mais arriscado: Diagnostico → AdminOculto → SafeBoot →
    Inicializacao (o maior, mais crítico em segurança, por último).

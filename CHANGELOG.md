@@ -5,6 +5,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[Faxina]** Modo `-Modo Faxina` funcional: catálogo com os 11 itens portados do
+  WinFaxina (Temporários/Navegadores/Sistema/Lixeira), motor único de execução
+  (`Invoke-ItemCatalogo`/`Get-AcaoDescricao`, renomeado de `Invoke-FaxinaItem` para
+  refletir que a Fase 3 vai estender os mesmos dispatchers com os tipos do Debloat),
+  perfis Minimo/Completo/Agressivo, menu interativo por categoria, ponto de
+  restauração verificado, simulação (`-Simular`/`-WhatIf`) e relatório JSON
+  antes/depois (agora com `Modo` e `VersaoWindowsDetectada` na raiz, além dos campos
+  que o WinFaxina original já tinha — necessário porque um relatório fundido não se
+  autoidentifica mais pela identidade da ferramenta como cada script original fazia).
+- **[Faxina]** `$script:CategoriasPorModo`: primeira prova do modelo "um motor só,
+  `-Modo` pré-filtra `Categorias`" — `Get-ItensDoPerfil`/`Initialize-Selecao`/
+  `Show-MainMenu` agora recebem a lista de categorias do modo em vez de usar uma
+  lista global fixa (o que a Fase 3 vai reaproveitar para `Debloat`/`Tudo` sem
+  alterar essas funções de novo). `Sistema` é a única categoria intencionalmente
+  compartilhada entre `Faxina` e `Debloat` — não é uma sobra a corrigir.
+- **[Faxina]** CI: etapa de execução real (`-NaoInterativo -Simular -Perfil
+  Agressivo`) contra o próprio runner `windows-latest`, validando o relatório JSON
+  gerado (11 itens, `Modo`/`Simulacao` corretos).
 - **[Esqueleto]** `#Requires -Version 5.1`, UTF-8 com BOM, help completo.
 - **[Esqueleto]** `param()` fundido com os 7 modos (`Debloat`, `Faxina`, `Tudo`,
   `Inicializacao`, `SafeBoot`, `AdminOculto`, `Diagnostico`) e todos os parâmetros
@@ -26,9 +44,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- Nenhum `-Modo` executa lógica real ainda — todos saem com código 9 e aviso "ainda
-  será implementado". Ver "Status de implementação" no README para o mapa de fases.
+- Só `-Modo Faxina` executa lógica real nesta versão. `Debloat`/`Tudo`/`Diagnostico`/
+  `AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso
+  "ainda será implementado". Ver "Status de implementação" no README para o mapa de
+  fases.
 - Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros
-  específicos de cada modo já existem (decisão deliberada — resolver toda colisão de
-  nome de uma vez só no esqueleto), mas ainda não são consumidos até sua fase ser
-  implementada. Remover a supressão na Fase 5.
+  dos modos ainda não implementados (`Debloat`/`Inicializacao`/`SafeBoot`/
+  `AdminOculto`/`Diagnostico`) já existem no `param()` fundido (decisão deliberada —
+  resolver toda colisão de nome de uma vez só no esqueleto), mas não são consumidos
+  até sua fase ser implementada. Remover a supressão na Fase 5.

@@ -7,7 +7,7 @@ on:
 
 jobs:
   validar:
-    name: Lint e testes
+    name: Lint, testes e execucao real por modo
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,34 @@ jobs:
           Import-Module Pester -MinimumVersion 5.0
           Invoke-Pester -Path .\tests -Output Detailed -CI
 
-      # A partir da Fase 2, cada modo implementado ganha aqui sua propria etapa de
-      # execucao real (mesmo padrao ja usado nos 6 repos originais) - nao colapsar
-      # todas num job so, para uma falha apontar exatamente qual modo quebrou.
+      # A partir da Fase 2, cada modo implementado ganha sua propria etapa de
+      # execucao real abaixo (mesmo padrao ja usado nos 6 repos originais) - nao
+      # colapsar todas num step so, para uma falha apontar exatamente qual modo quebrou.
+
+      - name: Execucao real (Modo Faxina, simulacao no proprio runner)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo Faxina -NaoInterativo -Perfil Agressivo -Simular -CaminhoRelatorioJson .\teste_faxina.json
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado: $LASTEXITCODE"
+            exit 1
+          }
+          if (-not (Test-Path .\teste_faxina.json)) {
+            Write-Error 'O relatorio JSON esperado nao foi gerado.'
+            exit 1
+          }
+          $relatorio = Get-Content .\teste_faxina.json -Raw | ConvertFrom-Json
+          Write-Host ("Modo={0} VersaoWindowsDetectada={1} Simulacao={2} Itens={3}" -f $relatorio.Modo, $relatorio.VersaoWindowsDetectada, $relatorio.Simulacao, $relatorio.Itens.Count)
+          if ($relatorio.Modo -ne 'Faxina') {
+            Write-Error 'Campo Modo do relatorio deveria ser "Faxina".'
+            exit 1
+          }
+          if (-not $relatorio.Simulacao) {
+            Write-Error 'Campo Simulacao do relatorio deveria ser true (rodamos com -Simular).'
+            exit 1
+          }
+          if ($relatorio.Itens.Count -ne 11) {
+            Write-Error "Esperava 11 itens no relatorio (catalogo da Fase 2), veio $($relatorio.Itens.Count)."
+            exit 1
+          }
+          Write-Host 'OK: -Modo Faxina (simulacao) executado com sucesso no runner real.'

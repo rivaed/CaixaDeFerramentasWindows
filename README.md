@@ -4,10 +4,14 @@ Caixa de ferramentas unificada para Windows: um arquivo só, zero dependências,
 debloat (detecta Windows 10/11 automaticamente), faxina de disco, itens de inicialização,
 modo de segurança, administrador oculto e diagnóstico rápido.
 
-> **Em construção por fases.** Esta versão (`0.1.0`) tem só o esqueleto: nenhum `-Modo`
-> está implementado ainda. Se você precisa de uma ferramenta funcionando hoje, use um dos
-> repositórios individuais abaixo — todos continuam mantidos separadamente e esta caixa é
-> um pacote complementar, não uma substituição.
+> **Em construção por fases.** Esta versão (`0.1.0`) já tem `-Modo Faxina` funcional; os
+> demais modos ainda saem com aviso "não implementado". Se você precisa de uma ferramenta
+> que ainda não chegou aqui, use um dos repositórios individuais abaixo — todos continuam
+> mantidos separadamente e esta caixa é um pacote complementar, não uma substituição.
+
+```powershell
+.\CaixaDeFerramentasWindows.ps1 -Modo Faxina -NaoInterativo -Perfil Completo
+```
 
 ## Repositórios individuais (funcionam hoje)
 
@@ -25,7 +29,8 @@ modo de segurança, administrador oculto e diagnóstico rápido.
 | `-Modo` | Origem | Status |
 |---|---|---|
 | `Debloat` / `Tudo` | Windows10/11-Debloat | Pendente (Fase 3) |
-| `Faxina` / `Tudo` | WinFaxina | Pendente (Fase 2) |
+| `Faxina` | WinFaxina | ✅ Implementado |
+| `Tudo` | Debloat + WinFaxina | Pendente (Fase 3, depende de `Debloat`) |
 | `Diagnostico` | DiagnosticoRapidoDePC | Pendente (Fase 4) |
 | `AdminOculto` | ativar-win-admin | Pendente (Fase 4) |
 | `SafeBoot` | SafeBoot-Ninja | Pendente (Fase 4) |
