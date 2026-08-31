@@ -71,7 +71,7 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Script de console interativo: cores e menu fazem parte da UX; transcript captura tudo.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Dry-run proprio via -Simular nos modos Debloat/Faxina/Tudo; -Confirmar/prompt proprio nos demais.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets', '', Justification = 'Write-Log so existe no PowerShell 6.1+; o alvo deste script e o Windows PowerShell 5.1, onde nao ha colisao.')]
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'TEMPORARIO (Fase 1/5): parametros especificos de Debloat/Faxina/Inicializacao/SafeBoot/AdminOculto/Diagnostico ja existem no param() fundido (decisao deliberada do plano: resolver toda colisao de nome uma vez so, no esqueleto), mas cada switch de -Modo ainda e um placeholder ate sua fase ser implementada. Remover esta supressao ao final da Fase 5, quando todo modo estiver com logica real consumindo seu parametro (ver CHANGELOG e o passe de PSScriptAnalyzer da Fase 5).')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Show-MenuFerramentas: nome decidido no plano aprovado da fusao (resolucao da colisao de Show-MainMenu — ver CLAUDE.md). "Ferramentas" aqui e a caixa de ferramentas inteira, nao uma colecao de objetos processados. A propria funcao nao tem param() pra hospedar um atributo de escopo mais estreito (SuppressMessageAttribute antes de "function" exige um param()/CmdletBinding logo em seguida, senao e erro de parse — confirmado ao tentar). A regra em si usa heuristica rasa (sufixo termina em "s"), nao analise semantica: outros nomes plurais em portugues no arquivo (Get-ItensRegistroRun etc.) so nao disparam porque o composto nao termina literalmente em "s".')]
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [ValidateSet('Debloat', 'Faxina', 'Tudo', 'Inicializacao', 'SafeBoot', 'AdminOculto', 'Diagnostico')]
@@ -2030,11 +2030,52 @@ function Invoke-AcaoToggleExperimental {
 
 #endregion
 
+#region Menu principal (sem -Modo) -------------------------------------------------
+
+function Show-MenuFerramentas {
+    while ($true) {
+        Clear-Host
+        Write-Host '=============================================================='
+        Write-Host (' CAIXA DE FERRAMENTAS WINDOWS (v{0})' -f $script:VERSAO)
+        Write-Host '=============================================================='
+        Write-Host ' 1) Debloat        - remover bloatware/telemetria (detecta Win10/11)'
+        Write-Host ' 2) Faxina         - limpeza de disco (temporarios, cache, lixeira)'
+        Write-Host ' 3) Tudo           - Debloat + Faxina juntos'
+        Write-Host ' 4) Diagnostico    - verificar Visualizador de Eventos (so leitura)'
+        Write-Host ' 5) AdminOculto    - ativar/desativar a conta Administrador oculta'
+        Write-Host ' 6) SafeBoot       - ligar/desligar o Modo de Seguranca'
+        Write-Host ' 7) Inicializacao  - gerenciar itens de inicializacao (Run/RunOnce)'
+        Write-Host ' S) Sair'
+        Write-Host '=============================================================='
+        $opcao = (Read-Host 'Opcao').Trim().ToUpper()
+        switch ($opcao) {
+            'S' { return $null }
+            '1' { return 'Debloat' }
+            '2' { return 'Faxina' }
+            '3' { return 'Tudo' }
+            '4' { return 'Diagnostico' }
+            '5' { return 'AdminOculto' }
+            '6' { return 'SafeBoot' }
+            '7' { return 'Inicializacao' }
+        }
+    }
+}
+
+#endregion
+
 #region Fluxo principal ----------------------------------------------------------
 
 if (-not $Modo -and $NaoInterativo) {
     Write-Log 'Modo nao interativo exige -Modo (sem ele nao ha como saber o que executar sem perguntar).' 'Erro'
     exit 2
+}
+
+if (-not $Modo) {
+    $Modo = Show-MenuFerramentas
+    if (-not $Modo) {
+        Write-Log 'Nenhuma acao executada.' 'Info'
+        exit 0
+    }
 }
 
 if ($WhatIfPreference -and $Modo -notin @('Debloat', 'Faxina', 'Tudo', $null)) {
@@ -2436,7 +2477,11 @@ switch ($Modo) {
         exit 0
     }
     default {
-        Write-Log "Menu principal ainda sera implementado na Fase 5 deste projeto. Use -Modo por enquanto." 'Erro'
+        # Inalcancavel na pratica: -Modo tem ValidateSet com os 7 valores validos, e o
+        # bloco "sem -Modo" acima ja garante $Modo preenchido (via Show-MenuFerramentas
+        # ou -NaoInterativo falhando cedo) antes de chegar aqui. Guarda defensiva, nao
+        # um caminho real.
+        Write-Log ('Modo desconhecido: "{0}".' -f $Modo) 'Erro'
         exit 9
     }
 }

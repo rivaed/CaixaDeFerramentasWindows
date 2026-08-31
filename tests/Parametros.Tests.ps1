@@ -101,6 +101,44 @@ Describe 'Parametros: colisao de -Acao resolvida por renomeio' {
     }
 }
 
+Describe 'Show-MenuFerramentas: menu de topo (Fase 5)' {
+    It 'existe e e chamado quando $Modo esta vazio, antes do switch principal' {
+        $script:Conteudo | Should -Match 'function Show-MenuFerramentas'
+        $script:Conteudo | Should -Match '\$Modo = Show-MenuFerramentas'
+
+        $posicaoChamada = $script:Conteudo.IndexOf('$Modo = Show-MenuFerramentas')
+        $posicaoSwitch = $script:Conteudo.IndexOf('switch ($Modo)')
+        $posicaoChamada | Should -BeGreaterThan 0
+        $posicaoSwitch | Should -BeGreaterThan 0
+        $posicaoChamada | Should -BeLessThan $posicaoSwitch -Because 'o menu de topo precisa resolver $Modo ANTES do switch principal rodar'
+    }
+
+    It 'as opcoes do menu retornam exatamente os mesmos 7 valores do ValidateSet de -Modo (nunca podem divergir)' {
+        # Guarda mecanica: se alguem adicionar um 8o modo ao ValidateSet e esquecer de
+        # adicionar a opcao correspondente no menu (ou vice-versa), isso pega.
+        $funcao = $script:Ast.FindAll({
+                param($no)
+                $no -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $no.Name -eq 'Show-MenuFerramentas'
+            }, $true) | Select-Object -First 1
+        $funcao | Should -Not -BeNullOrEmpty
+
+        $retornos = @($funcao.FindAll({
+                    param($no)
+                    $no -is [System.Management.Automation.Language.ReturnStatementAst] -and
+                    $no.Pipeline.Extent.Text -match "^'.*'$"
+                }, $true) | ForEach-Object { $_.Pipeline.Extent.Text.Trim("'") })
+
+        $paramModo = $script:Ast.ParamBlock.Parameters | Where-Object { $_.Name.VariablePath.UserPath -eq 'Modo' }
+        $validateSet = $paramModo.Attributes | Where-Object { $_.TypeName.Name -eq 'ValidateSet' }
+        $valoresEsperados = @($validateSet.PositionalArguments.Value)
+
+        foreach ($valor in $valoresEsperados) {
+            $retornos | Should -Contain $valor -Because "o menu de topo precisa oferecer o modo '$valor'"
+        }
+        $retornos.Count | Should -Be $valoresEsperados.Count -Because 'o menu nao pode oferecer um modo que nao existe (ou faltar um que existe)'
+    }
+}
+
 Describe 'ConvertTo-VersaoWindows: deteccao pura, testavel sem Windows real' {
     BeforeEach {
         $funcAst = $script:Ast.FindAll({

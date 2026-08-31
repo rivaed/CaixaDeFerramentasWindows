@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[Menu]** `Show-MenuFerramentas`: menu principal mostrado quando o script roda sem
+  `-Modo` (interativo). Lista os 7 modos e devolve a escolha para o mesmo fluxo/`switch`
+  que já trata cada um — não duplica nenhuma lógica de modo. Coberto por teste mecânico
+  que garante que as opções do menu nunca podem divergir do `ValidateSet` de `-Modo` (se
+  alguém adicionar um 8º modo e esquecer o menu, ou vice-versa, o teste pega).
+- Removida a supressão temporária de `PSReviewUnusedParameter` (existia desde a Fase 1):
+  todo parâmetro do `param()` fundido agora é consumido por algum modo. Zero apontamentos
+  reais do PSScriptAnalyzer confirmados sem a supressão.
 - **[Inicializacao]** Modo `-Modo Inicializacao` funcional — o maior e mais crítico em
   segurança do Grupo B, portado por último de propósito. `Listar`/`Adicionar`/`Remover`
   contra as chaves `Run`/`RunOnce` (`HKCU`+`HKLM`+`WOW6432Node`), sempre eleva (mesmo só
@@ -122,11 +130,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- **Todos os 6 modos do catálogo/Grupo B agora executam lógica real**
-  (`Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao`) — Fase
-  4 concluída. Falta só o menu principal (sem `-Modo`), que continua saindo com código 9.
-  Ver "Status de implementação" no README.
-- Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1` ainda não removida
-  nesta versão — todo parâmetro do `param()` fundido já é consumido por algum modo agora,
-  então a supressão deveria ser puramente redundante. Remoção + confirmação via
-  PSScriptAnalyzer ficam para a Fase 5 (junto do passe final de docs), não neste commit.
+- **Todos os 7 modos e o menu principal estão funcionais** — Fases 1-5 concluídas.
+  Falta apenas validação manual em VM Windows real (`-Simular`/`Status` primeiro, depois
+  `Minimo`) antes de confiar em produção, mesma ressalva já documentada nos 6 repos
+  originais — nenhum ambiente Windows real disponível para rodar isso durante o
+  desenvolvimento; ver CONTRIBUTING.md.

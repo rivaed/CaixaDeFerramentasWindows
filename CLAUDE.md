@@ -6,12 +6,15 @@ originais **continuam existindo e sendo mantidos separadamente** — esta caixa 
 opção complementar para quem quer tudo junto, não uma substituição. Arquivo único, zero
 dependências, Windows PowerShell 5.1 — mesmo padrão de todos os repos irmãos.
 
-**Projeto construído em fases** (script final gira em torno de 3000+ linhas). Estado atual:
-**Fases 1-4 concluídas** — os 6 modos (catálogo fundido: `Faxina`/`Debloat`/`Tudo`; Grupo
-B: `Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao`) todos funcionais. Falta só a
-**Fase 5** (menu principal `Show-MenuFerramentas`, passe final de docs, remover a
-supressão temporária de `PSReviewUnusedParameter`, CI consolidado). Cada modo/fase virou
-um push próprio para `main`. Sem `-Modo`, o script ainda sai com código 9 até a Fase 5.
+**Projeto construído em fases** (script final gira em torno de 3000+ linhas). **Fases 1-5
+concluídas**: os 7 modos (catálogo fundido: `Faxina`/`Debloat`/`Tudo`; Grupo B:
+`Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao`) e o menu principal
+(`Show-MenuFerramentas`) estão todos funcionais. Supressão temporária de
+`PSReviewUnusedParameter` removida — zero apontamentos reais do PSScriptAnalyzer. Cada
+modo/fase virou um push próprio para `main`. **Pendente**: validação manual interativa
+numa VM Windows real (menus, ações que alteram estado de verdade) — só foi possível
+validar via CI real (`windows-latest`) nos caminhos seguros/não-destrutivos de cada modo
+durante o desenvolvimento; ver README/CONTRIBUTING.
 
 ## Arquitetura: duas famílias, não uma
 
@@ -204,11 +207,16 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
      sucesso. `Test-BuildValidado` (a correção do bug `Mandatory`+array vazio) coberta por
      fixture regressiva. CI prova um round-trip real de Adicionar+Remover contra HKCU do
      próprio runner — não só leitura.
-5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
-   etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
-   manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`
-   no topo do `.ps1` nesta fase** — só faz sentido enquanto existem parâmetros de modos
-   ainda não implementados.
+5. ~~`Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo
+   as etapas reais por modo, PSScriptAnalyzer~~ — **feito**. `Show-MenuFerramentas`
+   coberto por teste que garante suas opções nunca divergirem do `ValidateSet` de
+   `-Modo`. Supressão temporária de `PSReviewUnusedParameter` removida (zero
+   apontamentos reais confirmados). CI já cresceu incrementalmente durante as Fases 2-4
+   (uma etapa de execução real por modo, adicionada na mesma fase em que cada modo foi
+   implementado) — não precisou de um passe de "unificação" separado no final.
+   **Validação manual em VM Windows real continua pendente** — nenhum ambiente Windows
+   esteve disponível durante o desenvolvimento; só CI real (`windows-latest`) nos
+   caminhos seguros de cada modo. Não reportar isso como feito sem checar de novo.
 
 ## Verificação
 
