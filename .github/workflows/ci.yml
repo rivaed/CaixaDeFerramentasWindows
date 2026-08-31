@@ -113,3 +113,13 @@ jobs:
             exit 1
           }
           Write-Host 'OK: -Modo Diagnostico executado com sucesso no runner real (nunca eleva, so leitura).'
+
+      - name: Execucao real (Modo AdminOculto, so -AcaoAdmin Status - nao altera a conta do runner)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo AdminOculto -NaoInterativo -AcaoAdmin Status
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado: $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host 'OK: -Modo AdminOculto -AcaoAdmin Status executado com sucesso no runner real.'

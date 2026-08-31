@@ -181,7 +181,14 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
      nunca eleva/nunca loga em arquivo (preservado e coberto por teste AST). Nova guarda
      mecânica genérica de `ConvertTo-Html` (`-Head`/`-Title`/`-PreContent`/`-PostContent`
      só string literal) — vale para qualquer modo futuro que use o cmdlet, não só este.
-   - AdminOculto/SafeBoot/Inicializacao — pendentes.
+   - ~~AdminOculto~~ — **feito**. `Get-ContaAdminEmbutida`/`Get-EstadoConta`/
+     `Read-SenhaConfirmada`/`Enable-ContaAdmin`/`Disable-ContaAdmin` portadas verbatim;
+     `Show-MainMenu` renomeado para `Show-MainMenuAdmin` (colisão já prevista). Sempre
+     eleva (coberto por teste AST). Fixture testa a regra inegociável "nunca ativa com
+     senha vazia" isolando `Enable-ContaAdmin` (o guard de `Length -eq 0` é a primeira
+     linha, antes de qualquer `Get-LocalUser` — seguro de extrair/chamar sem tocar no
+     sistema de contas real).
+   - SafeBoot/Inicializacao — pendentes.
 5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
    etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
    manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`
@@ -193,6 +200,19 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
 - Sintaxe/Pester/PSScriptAnalyzer: Docker (`mcr.microsoft.com/powershell:lts-ubuntu-22.04
   --platform linux/amd64`), zero apontamentos antes de cada commit (com a supressão
   temporária documentada acima até a Fase 5).
+- **Achado real da Fase 4 (AdminOculto), sobre a ORDEM dentro do comando Docker**: rodar
+  `[System.Management.Automation.Language.Parser]::ParseFile(...)` ANTES de
+  `Set-PSRepository`/`Install-Module` faz `Get-PSRepository -Name PSGallery` falhar com
+  "Unable to find repository" de forma consistente e reproduzível (não é flake de rede -
+  confirmado com `Get-PSRepository | Format-List` funcionando isolado, e o mesmo comando
+  falhando quando precedido pelo ParseFile, no mesmo container/mount). Causa exata não
+  investigada a fundo (suspeita: alguma interação entre carregar os tipos de
+  `Language.Parser` e o bootstrap lazy do provider NuGet do PackageManagement), mas a
+  ordem importa: **sempre instalar Pester/PSScriptAnalyzer (e configurar o PSGallery)
+  ANTES de qualquer `ParseFile`/uso de `System.Management.Automation.Language` no mesmo
+  comando Docker** — nunca o contrário. Também: comandos Docker em background NÃO herdam
+  `cd` de uma chamada anterior separada (mesmo foreground) — sempre prefixar com
+  `cd <caminho-absoluto-do-repo> &&` explícito, mesmo que pareça redundante.
 - CI (GitHub Actions): cresce junto com o script — lint + Pester desde a Fase 1; uma etapa
   de execução real por modo é adicionada na mesma fase em que o modo é implementado.
 - **Achado real da Fase 2, confirmado em execução real no runner**: o `windows-latest`

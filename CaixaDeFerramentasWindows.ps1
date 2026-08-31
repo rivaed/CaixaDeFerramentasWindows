@@ -1536,6 +1536,136 @@ function Export-RelatorioHtml {
 
 #endregion
 
+#region AdminOculto (Grupo B — ativar-win-admin) -----------------------------------
+# Familia "Utilitario pontual elevado": SEMPRE eleva (Set-LocalUser/Enable-LocalUser
+# mexem em conta local). Identifica a conta SEMPRE pelo SID (-500), nunca por nome
+# (varia por idioma do Windows). Regra inegociavel: nunca ativar com senha vazia.
+
+function Get-ContaAdminEmbutida {
+    # Identifica a conta pelo SID bem-conhecido (RID 500), nao pelo nome —
+    # "Administrator"/"Administrador"/etc. varia por idioma do Windows, o SID nao.
+    try {
+        $conta = Get-LocalUser -ErrorAction Stop | Where-Object { $_.SID -like '*-500' } | Select-Object -First 1
+    }
+    catch {
+        return $null
+    }
+    return $conta
+}
+
+function Get-EstadoConta {
+    $conta = Get-ContaAdminEmbutida
+    if (-not $conta) {
+        return @{ Encontrada = $false; Ativa = $false; Nome = $null; Detalhe = 'conta administrativa embutida (SID -500) nao encontrada' }
+    }
+    return @{ Encontrada = $true; Ativa = $conta.Enabled; Nome = $conta.Name; Detalhe = ('conta "{0}" — {1}' -f $conta.Name, $(if ($conta.Enabled) { 'ATIVA' } else { 'desativada' })) }
+}
+
+function Read-SenhaConfirmada {
+    while ($true) {
+        $senha1 = Read-Host 'Nova senha para a conta administrativa' -AsSecureString
+        if ($senha1.Length -eq 0) {
+            Write-Log 'Senha vazia nao e permitida — a conta ficaria com acesso sem senha.' 'Aviso'
+            continue
+        }
+        $senha2 = Read-Host 'Confirme a senha' -AsSecureString
+        $bstr1 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($senha1)
+        $bstr2 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($senha2)
+        try {
+            $iguais = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr1) -ceq [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr2)
+        }
+        finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr1)
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr2)
+        }
+        if ($iguais) { return $senha1 }
+        Write-Log 'As senhas nao coincidem. Tente novamente.' 'Aviso'
+    }
+}
+
+function Enable-ContaAdmin {
+    param([Parameter(Mandatory)][System.Security.SecureString]$Senha)
+
+    if ($Senha.Length -eq 0) {
+        return @{ Status = 'Falha'; Detalhe = 'senha vazia recusada — a conta nao foi alterada' }
+    }
+    $conta = Get-ContaAdminEmbutida
+    if (-not $conta) {
+        return @{ Status = 'Falha'; Detalhe = 'conta administrativa embutida (SID -500) nao encontrada' }
+    }
+    try {
+        # Senha e setada ANTES de habilitar — a conta nunca fica ativa sem senha
+        # nova definida, nem por um instante.
+        Set-LocalUser -Name $conta.Name -Password $Senha -ErrorAction Stop
+        Enable-LocalUser -Name $conta.Name -ErrorAction Stop
+        return @{ Status = 'Ok'; Detalhe = ('conta "{0}" ativada com senha nova definida' -f $conta.Name) }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = $_.Exception.Message }
+    }
+}
+
+function Disable-ContaAdmin {
+    $conta = Get-ContaAdminEmbutida
+    if (-not $conta) {
+        return @{ Status = 'Falha'; Detalhe = 'conta administrativa embutida (SID -500) nao encontrada' }
+    }
+    if (-not $conta.Enabled) {
+        return @{ Status = 'Ok'; Detalhe = ('conta "{0}" ja estava desativada' -f $conta.Name) }
+    }
+    try {
+        Disable-LocalUser -Name $conta.Name -ErrorAction Stop
+        return @{ Status = 'Ok'; Detalhe = ('conta "{0}" desativada' -f $conta.Name) }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = $_.Exception.Message }
+    }
+}
+
+function Show-MainMenuAdmin {
+    while ($true) {
+        Clear-Host
+        $estado = Get-EstadoConta
+        Write-Host '=============================================================='
+        Write-Host (' CAIXA DE FERRAMENTAS — Modo AdminOculto (v{0})' -f $script:VERSAO)
+        Write-Host (' Estado atual: {0}' -f $estado.Detalhe)
+        Write-Host '=============================================================='
+        Write-Host ' 1) Ver estado atual (nao altera nada)'
+        Write-Host ' 2) Ativar (vai pedir uma senha nova — nunca fica sem senha)'
+        Write-Host ' 3) Desativar'
+        Write-Host ' S) Sair'
+        Write-Host '=============================================================='
+        $opcao = (Read-Host 'Opcao').Trim().ToUpper()
+
+        switch ($opcao) {
+            'S' { return $null }
+            '1' {
+                Write-Log ('Estado atual: {0}' -f $estado.Detalhe) 'Info'
+                Read-Host 'Pressione ENTER para continuar' | Out-Null
+            }
+            '2' {
+                Clear-Host
+                Write-Host '====================== ATIVAR CONTA ============================'
+                Write-Host ' A conta administrativa embutida NAO tem UAC — todo processo' -ForegroundColor Yellow
+                Write-Host ' roda com privilegio total, sem prompt de elevacao. Recomendado' -ForegroundColor Yellow
+                Write-Host ' usar so temporariamente e desativar de novo depois.' -ForegroundColor Yellow
+                Write-Host '=================================================================='
+                $resposta = Read-Host 'Confirmar ativacao? (S/N)'
+                if ($resposta -match '^[sS]') {
+                    $senha = Read-SenhaConfirmada
+                    return @{ Acao = 'Ativar'; Senha = $senha }
+                }
+            }
+            '3' {
+                $resposta = Read-Host 'Confirmar desativacao da conta? (S/N)'
+                if ($resposta -match '^[sS]') { return @{ Acao = 'Desativar' } }
+            }
+        }
+    }
+}
+
+#endregion
+
 #region Fluxo principal ----------------------------------------------------------
 
 if (-not $Modo -and $NaoInterativo) {
@@ -1761,8 +1891,73 @@ switch ($Modo) {
         exit 0
     }
     'AdminOculto' {
-        Write-Log "Modo 'AdminOculto' ainda sera implementado na Fase 4 deste projeto." 'Erro'
-        exit 9
+        # Sempre eleva (Set-LocalUser/Enable-LocalUser exigem admin).
+        Assert-Admin -ParametrosOriginais $PSBoundParameters
+        Start-Logging -CaminhoPersonalizado $CaminhoLog -Prefixo 'admin'
+
+        $sufixoAcao = if ($AcaoAdmin) { ' — acao "{0}"' -f $AcaoAdmin } else { '' }
+        $sufixoModo = if ($NaoInterativo) { ' (nao interativo)' } else { '' }
+        Write-Log ('Modo AdminOculto{0}{1}' -f $sufixoAcao, $sufixoModo) 'Titulo'
+        if ($script:ArquivoLog) { Write-Log ('Log: {0}' -f $script:ArquivoLog) 'Info' }
+
+        $codigoSaida = 0
+        try {
+            if ($AcaoAdmin -eq 'Status') {
+                $estado = Get-EstadoConta
+                Write-Log ('Estado atual: {0}' -f $estado.Detalhe) 'Info'
+            }
+            elseif ($NaoInterativo) {
+                if (-not $AcaoAdmin) {
+                    Write-Log 'Modo nao interativo exige -AcaoAdmin (Status, Ativar ou Desativar).' 'Erro'
+                    exit 2
+                }
+                if ($AcaoAdmin -eq 'Ativar') {
+                    if (-not $SenhaSegura -or $SenhaSegura.Length -eq 0) {
+                        Write-Log 'Modo nao interativo com -AcaoAdmin Ativar exige -SenhaSegura (a conta nunca e ativada sem senha).' 'Erro'
+                        exit 2
+                    }
+                    $resultadoAdmin = Enable-ContaAdmin -Senha $SenhaSegura
+                }
+                else {
+                    $resultadoAdmin = Disable-ContaAdmin
+                }
+                if ($resultadoAdmin.Status -eq 'Ok') { Write-Log $resultadoAdmin.Detalhe 'Ok' }
+                else { Write-Log $resultadoAdmin.Detalhe 'Erro'; $codigoSaida = 5 }
+            }
+            else {
+                if ($AcaoAdmin -eq 'Ativar') {
+                    $senhaConfirmada = Read-SenhaConfirmada
+                    $resultadoAdmin = Enable-ContaAdmin -Senha $senhaConfirmada
+                }
+                elseif ($AcaoAdmin -eq 'Desativar') {
+                    $resultadoAdmin = Disable-ContaAdmin
+                }
+                else {
+                    $escolha = Show-MainMenuAdmin
+                    if (-not $escolha) {
+                        Write-Log 'Nenhuma acao executada.' 'Info'
+                        Stop-LoggingSeAtivo
+                        exit 0
+                    }
+                    if ($escolha.Acao -eq 'Ativar') {
+                        $resultadoAdmin = Enable-ContaAdmin -Senha $escolha.Senha
+                    }
+                    else {
+                        $resultadoAdmin = Disable-ContaAdmin
+                    }
+                }
+                if ($resultadoAdmin.Status -eq 'Ok') { Write-Log $resultadoAdmin.Detalhe 'Ok' }
+                else { Write-Log $resultadoAdmin.Detalhe 'Erro'; $codigoSaida = 5 }
+            }
+        }
+        finally {
+            Stop-LoggingSeAtivo
+        }
+
+        if (-not $NaoInterativo) {
+            Read-Host 'Pressione ENTER para sair' | Out-Null
+        }
+        exit $codigoSaida
     }
     'SafeBoot' {
         Write-Log "Modo 'SafeBoot' ainda sera implementado na Fase 4 deste projeto." 'Erro'

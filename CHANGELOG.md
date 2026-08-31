@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[AdminOculto]** Modo `-Modo AdminOculto` funcional: ativa/desativa a conta
+  Administrador embutida, identificada **sempre pelo SID** (termina em `-500`), nunca por
+  nome (varia por idioma do Windows). Regra inegociável preservada e testada: nunca ativa
+  a conta com senha vazia (`Enable-ContaAdmin` recusa antes de tocar em `Get-LocalUser`).
+  `Show-MainMenu` original renomeado para `Show-MainMenuAdmin` (colisão de nome já prevista
+  na Fase 1). Sempre eleva — `Set-LocalUser`/`Enable-LocalUser` exigem admin.
 - **[Diagnostico]** Modo `-Modo Diagnostico` funcional (primeiro modo do Grupo B, portado
   quase como estava, arquiteturalmente independente do motor de catálogo): 6 verificações
   fixas no Visualizador de Eventos (desligamento sujo/Kernel-Power, desligamento
@@ -91,11 +97,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico` executam lógica real nesta versão.
-  `AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso "ainda
-  será implementado". Ver "Status de implementação" no README.
+- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto` executam lógica real nesta
+  versão. `SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso "ainda será
+  implementado". Ver "Status de implementação" no README.
 - Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros
-  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`/`AdminOculto`) já
+  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`) já
   existem no `param()` fundido (decisão deliberada — resolver toda
   colisão de nome de uma vez só no esqueleto), mas não são consumidos até sua fase
   ser implementada. Remover a supressão na Fase 5.
