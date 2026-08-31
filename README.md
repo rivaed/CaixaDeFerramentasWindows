@@ -40,7 +40,7 @@ modo de segurança, administrador oculto e diagnóstico rápido.
 | `Debloat` | Windows10/11-Debloat | ✅ Implementado |
 | `Faxina` | WinFaxina | ✅ Implementado |
 | `Tudo` | Debloat + WinFaxina | ✅ Implementado |
-| `Diagnostico` | DiagnosticoRapidoDePC | Pendente (Fase 4) |
+| `Diagnostico` | DiagnosticoRapidoDePC | ✅ Implementado |
 | `AdminOculto` | ativar-win-admin | Pendente (Fase 4) |
 | `SafeBoot` | SafeBoot-Ninja | Pendente (Fase 4) |
 | `Inicializacao` | StartupAppsNinja | Pendente (Fase 4) |

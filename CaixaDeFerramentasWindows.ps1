@@ -1485,6 +1485,57 @@ function Show-MainMenu {
 
 #endregion
 
+#region Diagnostico (Grupo B — DiagnosticoRapidoDePC) -----------------------------
+# Familia "Relatorio somente-leitura": nunca eleva (System/Application sao legiveis
+# por usuario padrao; so Security exigiria admin, e nenhuma verificacao usa Security),
+# nunca chama Start-Logging/transcript - preserva o comportamento original.
+
+function Export-Relatorio {
+    param($Dados, $CaminhoDestino)
+    $pasta = Split-Path -Path $CaminhoDestino -Parent
+    if ($pasta -and -not (Test-Path -Path $pasta)) {
+        New-Item -Path $pasta -ItemType Directory -Force | Out-Null
+    }
+    try {
+        $Dados | Export-Csv -Path $CaminhoDestino -NoTypeInformation -Encoding UTF8
+        Write-Log ('Arquivo exportado com sucesso: {0}' -f $CaminhoDestino) 'Ok'
+        return $true
+    }
+    catch {
+        Write-Log ('Erro ao exportar o arquivo: {0}' -f $_) 'Erro'
+        return $false
+    }
+}
+
+function Export-RelatorioHtml {
+    param($Dados, $CaminhoDestino, $Resumo)
+    $pasta = Split-Path -Path $CaminhoDestino -Parent
+    if ($pasta -and -not (Test-Path -Path $pasta)) {
+        New-Item -Path $pasta -ItemType Directory -Force | Out-Null
+    }
+    try {
+        # -Head/-Title/-PostContent recebem SOMENTE texto literal fixo — nunca dado do
+        # Event Log (mensagem de evento, nome de provedor, etc.). $Resumo e $Dados
+        # entram via -Body/pipeline, mas ja chegam pre-escapados: ConvertTo-Html aplica
+        # HtmlEncode em todo valor de celula automaticamente.
+        $fragmentoResumo = $Resumo | ConvertTo-Html -Fragment -As List
+        $html = $Dados | ConvertTo-Html `
+            -Head '<meta charset="utf-8"><style>body{font-family:"Segoe UI",Arial,sans-serif;margin:2em;color:#222;} table{border-collapse:collapse;margin-bottom:1.5em;} th,td{border:1px solid #ccc;padding:6px 12px;text-align:left;} th{background:#2c3e50;color:#fff;} tr:nth-child(even){background:#f5f5f5;}</style>' `
+            -Title 'Relatorio - Diagnostico da Caixa de Ferramentas' `
+            -Body ('<h1>Diagnostico do Visualizador de Eventos</h1>' + $fragmentoResumo) `
+            -PostContent '<p><em>Relatorio somente leitura — nenhum log foi apagado ou alterado.</em></p>'
+        $html | Set-Content -Path $CaminhoDestino -Encoding UTF8
+        Write-Log ('Arquivo HTML exportado com sucesso: {0}' -f $CaminhoDestino) 'Ok'
+        return $true
+    }
+    catch {
+        Write-Log ('Erro ao exportar o arquivo HTML: {0}' -f $_) 'Erro'
+        return $false
+    }
+}
+
+#endregion
+
 #region Fluxo principal ----------------------------------------------------------
 
 if (-not $Modo -and $NaoInterativo) {
@@ -1573,8 +1624,141 @@ switch ($Modo) {
         exit $codigoSaida
     }
     'Diagnostico' {
-        Write-Log "Modo 'Diagnostico' ainda sera implementado na Fase 4 deste projeto." 'Erro'
-        exit 9
+        # Sem Assert-Admin, sem Start-Logging: familia "somente-leitura", nunca eleva.
+        if (-not $Dias) {
+            if ($NaoInterativo) {
+                Write-Log 'Modo nao interativo exige -Dias.' 'Erro'
+                exit 2
+            }
+            $entrada = Read-Host 'Informe quantos dias para tras verificar (ex: 30)'
+            if (-not [int]::TryParse($entrada, [ref]$null) -or [int]$entrada -le 0) {
+                Write-Log 'Valor invalido. Informe um numero inteiro maior que zero.' 'Erro'
+                exit 2
+            }
+            $Dias = [int]$entrada
+        }
+
+        $dataLimite = (Get-Date).AddDays(-$Dias)
+        Write-Log ('Verificando os ultimos {0} dias nos logs System e Application...' -f $Dias) 'Titulo'
+
+        $verificacoes = @(
+            @{ Nome = 'Desligamento sujo ou travamento (Kernel-Power)'; LogName = 'System'; ProviderName = 'Microsoft-Windows-Kernel-Power'; Id = 41 }
+            @{ Nome = 'Desligamento inesperado registrado ao reiniciar'; LogName = 'System'; Id = 6008 }
+            @{ Nome = 'Erro de controlador de disco'; LogName = 'System'; ProviderName = 'disk'; Id = @(7, 51) }
+            @{ Nome = 'Timeout de I/O em disco (storport)'; LogName = 'System'; ProviderName = 'storport'; Id = 153 }
+            @{ Nome = 'Erro de hardware ou memoria (WHEA)'; LogName = 'System'; ProviderName = 'Microsoft-Windows-WHEA-Logger' }
+            @{ Nome = 'Falha de aplicativo (Application Error)'; LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000 }
+        )
+
+        $resultadosDiagnostico = foreach ($v in $verificacoes) {
+            $parametrosFiltro = @{ LogName = $v.LogName; StartTime = $dataLimite }
+            if ($v.ProviderName) { $parametrosFiltro.ProviderName = $v.ProviderName }
+            if ($v.Id) { $parametrosFiltro.Id = $v.Id }
+
+            try {
+                $eventos = @(Get-WinEvent -FilterHashtable $parametrosFiltro -ErrorAction Stop)
+            }
+            catch {
+                if ($_.FullyQualifiedErrorId -match 'NoMatchingEventsFound') {
+                    $eventos = @()
+                }
+                else {
+                    Write-Log ("Falha ao verificar '{0}': {1}" -f $v.Nome, $_) 'Aviso'
+                    $eventos = $null
+                }
+            }
+
+            $status = if ($null -eq $eventos) { 'NaoVerificado' } elseif ($eventos.Count -eq 0) { 'Limpo' } else { 'Achado' }
+            $detalheVerificacao = switch ($status) {
+                'NaoVerificado' { 'falha ao consultar este log/provedor' }
+                'Limpo'         { 'nenhuma ocorrencia no periodo' }
+                'Achado'        { '{0} ocorrencia(s) no periodo' -f $eventos.Count }
+            }
+            [pscustomobject]@{ Verificacao = $v.Nome; Status = $status; Detalhe = $detalheVerificacao; Eventos = @($eventos) }
+        }
+
+        $totalAchados = @($resultadosDiagnostico | Where-Object Status -eq 'Achado').Count
+        $totalNaoVerificado = @($resultadosDiagnostico | Where-Object Status -eq 'NaoVerificado').Count
+
+        if ($totalNaoVerificado -eq $resultadosDiagnostico.Count) {
+            Write-Log 'Nenhuma verificacao conseguiu consultar o Visualizador de Eventos. Confira se o servico "Log de Eventos do Windows" esta rodando.' 'Erro'
+            exit 3
+        }
+
+        Write-Log ('Verificacoes com ocorrencia: {0} de {1}.' -f $totalAchados, $resultadosDiagnostico.Count) 'Info'
+        if ($totalNaoVerificado -gt 0) {
+            Write-Log ('Atencao: {0} verificacao(oes) nao puderam ser consultadas — veja o detalhe abaixo.' -f $totalNaoVerificado) 'Aviso'
+        }
+
+        $linhasRelatorioDiagnostico = foreach ($r in $resultadosDiagnostico) {
+            if ($r.Eventos.Count -gt 0) {
+                foreach ($ev in $r.Eventos) {
+                    [pscustomobject]@{
+                        Verificacao = $r.Verificacao
+                        DataHora    = $ev.TimeCreated
+                        Id          = $ev.Id
+                        Provedor    = $ev.ProviderName
+                        Mensagem    = ($ev.Message -split "`r?`n")[0]
+                    }
+                }
+            }
+            else {
+                [pscustomobject]@{
+                    Verificacao = $r.Verificacao
+                    DataHora    = $null
+                    Id          = $null
+                    Provedor    = $null
+                    Mensagem    = $r.Detalhe
+                }
+            }
+        }
+
+        $resumoHtmlDiagnostico = @(
+            [pscustomobject]@{ Campo = 'Dias verificados'; Valor = $Dias }
+            [pscustomobject]@{ Campo = 'Gerado em'; Valor = (Get-Date).ToString('dd/MM/yyyy HH:mm') }
+            [pscustomobject]@{ Campo = 'Computador'; Valor = $env:COMPUTERNAME }
+            [pscustomobject]@{ Campo = 'Verificacoes com ocorrencia'; Valor = ('{0} de {1}' -f $totalAchados, $resultadosDiagnostico.Count) }
+        )
+        $pediuCsv = $Exportar -or $CaminhoCsv
+        $pediuHtml = $ExportarHtml -or $CaminhoHtml
+
+        if ($NaoInterativo -or $pediuCsv -or $pediuHtml) {
+            if ($pediuCsv -or ($NaoInterativo -and -not $pediuHtml)) {
+                $destino = if ($CaminhoCsv) { $CaminhoCsv } else { Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.csv" }
+                [void](Export-Relatorio -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destino)
+            }
+            if ($pediuHtml) {
+                $destinoHtml = if ($CaminhoHtml) { $CaminhoHtml } else { Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.html" }
+                [void](Export-RelatorioHtml -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destinoHtml -Resumo $resumoHtmlDiagnostico)
+            }
+        }
+        else {
+            $resultadosDiagnostico | Format-Table Verificacao, Status, Detalhe -AutoSize -Wrap
+
+            $resposta = Read-Host 'Exportar este relatorio? [C]SV, [H]TML, [A]mbos, [N]ao'
+            switch -Regex ($resposta) {
+                '^[cC]' {
+                    $destino = Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.csv"
+                    [void](Export-Relatorio -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destino)
+                }
+                '^[hH]' {
+                    $destinoHtml = Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.html"
+                    [void](Export-RelatorioHtml -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destinoHtml -Resumo $resumoHtmlDiagnostico)
+                }
+                '^[aA]' {
+                    $destino = Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.csv"
+                    [void](Export-Relatorio -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destino)
+                    $destinoHtml = Join-Path 'C:\AD_Relatorios' "DiagnosticoPC_${Dias}dias.html"
+                    [void](Export-RelatorioHtml -Dados $linhasRelatorioDiagnostico -CaminhoDestino $destinoHtml -Resumo $resumoHtmlDiagnostico)
+                }
+                default {
+                    Write-Log 'Nenhum arquivo exportado.' 'Info'
+                }
+            }
+        }
+
+        Write-Log 'Execucao concluida.' 'Titulo'
+        exit 0
     }
     'AdminOculto' {
         Write-Log "Modo 'AdminOculto' ainda sera implementado na Fase 4 deste projeto." 'Erro'

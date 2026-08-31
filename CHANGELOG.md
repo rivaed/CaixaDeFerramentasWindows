@@ -5,6 +5,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[Diagnostico]** Modo `-Modo Diagnostico` funcional (primeiro modo do Grupo B, portado
+  quase como estava, arquiteturalmente independente do motor de catálogo): 6 verificações
+  fixas no Visualizador de Eventos (desligamento sujo/Kernel-Power, desligamento
+  inesperado, erro de disco, timeout storport, erro WHEA, falha de aplicativo), exportação
+  CSV e HTML, menu interativo `[C]SV/[H]TML/[A]mbos/[N]ao`. **Nunca eleva, nunca grava log
+  em arquivo** — System/Application são legíveis por usuário padrão; preservado do
+  original e agora coberto por teste mecânico (procura chamadas reais a `Assert-Admin`/
+  `Start-Logging` via AST, não busca de texto — evita falso positivo em comentário).
+- **[Diagnostico]** Nova guarda mecânica genérica: toda chamada a `ConvertTo-Html` no
+  arquivo tem `-Head`/`-Title`/`-PreContent`/`-PostContent` verificados como string
+  literal fixa via AST (nunca variável) — regra já documentada em CLAUDE.md desde a Fase
+  1, mas só ganhou teste de verdade agora que `Diagnostico` é o primeiro modo a usar o
+  cmdlet.
 - **[Debloat]** Modo `-Modo Debloat`/`-Modo Tudo` funcionais: fusão dos catálogos do
   Windows10-Debloat e Windows11-Debloat (66 itens novos: 46 Apps, 11 Telemetria, 9
   Desempenho) no mesmo motor único do `-Modo Faxina`. Novidades no motor: campo
@@ -78,11 +91,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- `-Modo Faxina`/`Debloat`/`Tudo` executam lógica real nesta versão.
-  `Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código
-  9 e aviso "ainda será implementado". Ver "Status de implementação" no README.
+- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico` executam lógica real nesta versão.
+  `AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso "ainda
+  será implementado". Ver "Status de implementação" no README.
 - Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros
-  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`/`AdminOculto`/
-  `Diagnostico`) já existem no `param()` fundido (decisão deliberada — resolver toda
+  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`/`AdminOculto`) já
+  existem no `param()` fundido (decisão deliberada — resolver toda
   colisão de nome de uma vez só no esqueleto), mas não são consumidos até sua fase
   ser implementada. Remover a supressão na Fase 5.

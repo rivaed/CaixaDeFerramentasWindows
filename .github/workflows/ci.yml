@@ -93,3 +93,23 @@ jobs:
             exit 1
           }
           Write-Host 'OK: -Modo Debloat (simulacao) executado com sucesso no runner real.'
+
+      - name: Execucao real (Modo Diagnostico, contra o proprio runner)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo Diagnostico -NaoInterativo -Dias 30 -CaminhoCsv .\teste_diagnostico.csv
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado: $LASTEXITCODE"
+            exit 1
+          }
+          if (-not (Test-Path .\teste_diagnostico.csv)) {
+            Write-Error 'O CSV esperado nao foi gerado.'
+            exit 1
+          }
+          $linhas = Import-Csv .\teste_diagnostico.csv
+          $linhas | Format-Table Verificacao, DataHora, Id, Provedor -AutoSize -Wrap | Out-String -Width 200 | Write-Host
+          if ($linhas.Count -lt 6) {
+            Write-Error "Esperava pelo menos 6 linhas no CSV (uma por verificacao, minimo), veio $($linhas.Count)."
+            exit 1
+          }
+          Write-Host 'OK: -Modo Diagnostico executado com sucesso no runner real (nunca eleva, so leitura).'

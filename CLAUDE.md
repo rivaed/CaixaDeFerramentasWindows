@@ -8,10 +8,10 @@ dependências, Windows PowerShell 5.1 — mesmo padrão de todos os repos irmão
 
 **Projeto construído em fases** (script final gira em torno de 3000+ linhas). Estado atual:
 **Fases 1-3 concluídas** (esqueleto + catálogo fundido completo: 11 itens do WinFaxina +
-66 do Debloat10/11 — `-Modo Faxina`/`Debloat`/`Tudo` todos funcionais). Fases 4-5
-pendentes — ver "Ordem de execução" abaixo. Cada fase vira um push próprio para `main`;
-`Inicializacao`/`SafeBoot`/`AdminOculto`/`Diagnostico` ainda saem com código 9 e aviso
-"ainda será implementado".
+66 do Debloat10/11 — `-Modo Faxina`/`Debloat`/`Tudo` todos funcionais); **Fase 4 em
+andamento** (Grupo B, do mais seguro ao mais arriscado — `Diagnostico` feito;
+`AdminOculto`/`SafeBoot`/`Inicializacao` pendentes). Cada modo/fase vira um push próprio
+para `main`; os pendentes ainda saem com código 9 e aviso "ainda será implementado".
 
 ## Arquitetura: duas famílias, não uma
 
@@ -176,11 +176,12 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
    `Tudo`~~ — **feito**. 66 itens novos, `SistemasAlvo`/`Test-ItemAplicavelAoSO` novos no
    motor, guarda de dispatcher por Tipo alargada, CI com execução real de `-Modo Debloat`.
 4. Portar Grupo B do mais seguro ao mais arriscado: Diagnostico → AdminOculto → SafeBoot →
-   Inicializacao (o maior, mais crítico em segurança, por último). Todas as 6 extrações
-   verbatim dos scripts-fonte (Fase 3 usou as 2 do Debloat; as 4 do Grupo B —
-   DiagnosticoRapidoDePC, ativar-win-admin, SafeBoot-Ninja, StartupAppsNinja — já foram
-   feitas em paralelo e estão disponíveis no histórico da conversa, não precisam ser
-   refeitas ao iniciar esta fase).
+   Inicializacao (o maior, mais crítico em segurança, por último).
+   - ~~Diagnostico~~ — **feito**. `Export-Relatorio`/`Export-RelatorioHtml` portadas,
+     nunca eleva/nunca loga em arquivo (preservado e coberto por teste AST). Nova guarda
+     mecânica genérica de `ConvertTo-Html` (`-Head`/`-Title`/`-PreContent`/`-PostContent`
+     só string literal) — vale para qualquer modo futuro que use o cmdlet, não só este.
+   - AdminOculto/SafeBoot/Inicializacao — pendentes.
 5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
    etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
    manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`
