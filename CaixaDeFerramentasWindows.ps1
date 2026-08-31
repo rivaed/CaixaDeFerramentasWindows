@@ -1777,6 +1777,259 @@ function Show-MainMenuSafeBoot {
 
 #endregion
 
+#region Inicializacao (Grupo B — StartupAppsNinja) ---------------------------------
+# Familia "Utilitario pontual elevado": SEMPRE eleva, mesmo so pra Listar (muitas
+# chaves envolvidas ficam em HKLM). Confirm-Acao generica (param $Descricao) tem AQUI
+# a sua origem/dono (ver CLAUDE.md, Bloqueio B) - ja existe desde a Fase 1.
+
+# Builds do Windows ja validados em VM real (reg export antes/depois + conferencia
+# visual no Task Manager) para a acao Habilitar/Desabilitar. Comeca VAZIA de
+# proposito: nenhum build foi validado ainda nesta primeira versao.
+$script:BuildsValidados = @()
+
+function ConvertTo-ItemInicializacao {
+    param(
+        [Parameter(Mandatory)][string]$Nome,
+        [string]$Comando,
+        [Parameter(Mandatory)][string]$Origem,
+        [byte[]]$ValorStartupApproved
+    )
+    # Sem entrada em StartupApproved = Windows trata como HABILITADO por padrao —
+    # nao presumir desabilitado so por falta de dado.
+    $habilitado = if ($null -eq $ValorStartupApproved -or $ValorStartupApproved.Count -eq 0) {
+        $true
+    }
+    else {
+        $ValorStartupApproved[0] -in @(0x02, 0x06)
+    }
+    [pscustomobject]@{
+        Nome       = $Nome
+        Comando    = $Comando
+        Origem     = $Origem
+        Habilitado = $habilitado
+    }
+}
+
+function New-ValorStartupApproved {
+    param([Parameter(Mandatory)][bool]$Habilitado)
+    # 12 bytes: [0]=flag (02/06 habilitado, 03 desabilitado), [1..3]=reservado
+    # (zerado — semantica exata nao confirmada), [4..11]=FILETIME (8 bytes,
+    # little-endian Int64). Usado só quando NAO ha valor existente pra preservar.
+    $bytes = New-Object byte[] 12
+    $bytes[0] = if ($Habilitado) { 0x02 } else { 0x03 }
+    $filetimeBytes = [BitConverter]::GetBytes([DateTime]::Now.ToFileTime())
+    [Array]::Copy($filetimeBytes, 0, $bytes, 4, 8)
+    return $bytes
+}
+
+function Set-PrimeiroByteStartupApproved {
+    param(
+        [Parameter(Mandatory)][byte[]]$ValorAtual,
+        [Parameter(Mandatory)][bool]$Habilitado
+    )
+    # So altera o byte 0 (flag) e preserva os outros 11 bytes exatamente como
+    # estavam — nao regenera o FILETIME nem o restante, porque o significado exato
+    # desses bytes nao esta confirmado (nao documentado pela Microsoft). Preservar
+    # o que ja existia e sempre mais seguro do que tentar reconstruir "o valor certo".
+    $novoValor = $ValorAtual.Clone()
+    $novoValor[0] = if ($Habilitado) { 0x02 } else { 0x03 }
+    return $novoValor
+}
+
+function Test-BuildValidado {
+    param(
+        [Parameter(Mandatory)][int]$BuildAtual,
+        # Sem [Parameter(Mandatory)] de proposito: um parametro de array obrigatorio
+        # rejeita @() com ParameterBindingValidationException ("it is an empty
+        # array") — e $script:BuildsValidados comeca vazio de proposito (nenhum
+        # build validado em VM ainda), entao Mandatory aqui quebraria a PRIMEIRA
+        # chamada real desta funcao. Bug real, achado pelo teste Pester.
+        [int[]]$BuildsValidados = @()
+    )
+    return $BuildsValidados -contains $BuildAtual
+}
+
+function Get-CaminhoRegistroRun {
+    param([ValidateSet('Usuario', 'TodosUsuarios')][string]$Escopo, [ValidateSet('Run', 'RunOnce')][string]$Chave)
+    if ($Escopo -eq 'Usuario') {
+        return "HKCU:\Software\Microsoft\Windows\CurrentVersion\$Chave"
+    }
+    return "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\$Chave"
+}
+
+function Get-CaminhoRegistroRunWow6432 {
+    param([ValidateSet('Run', 'RunOnce')][string]$Chave)
+    return "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\$Chave"
+}
+
+function Get-CaminhoStartupApproved {
+    param([ValidateSet('Usuario', 'TodosUsuarios')][string]$Escopo, [ValidateSet('Run', 'StartupFolder')][string]$Secao = 'Run')
+    $base = if ($Escopo -eq 'Usuario') { 'HKCU:' } else { 'HKLM:' }
+    return "$base\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\$Secao"
+}
+
+function Get-ValorStartupApproved {
+    param([Parameter(Mandatory)][string]$CaminhoChave, [Parameter(Mandatory)][string]$Nome)
+    if (-not (Test-Path $CaminhoChave)) { return $null }
+    $item = Get-ItemProperty -Path $CaminhoChave -Name $Nome -ErrorAction SilentlyContinue
+    if (-not $item) { return $null }
+    return [byte[]]$item.$Nome
+}
+
+function Get-ItensRegistroRun {
+    $itens = [System.Collections.Generic.List[object]]::new()
+    $combinacoes = @(
+        @{ Escopo = 'Usuario'; Chave = 'Run'; Origem = 'HKCU:Run' }
+        @{ Escopo = 'Usuario'; Chave = 'RunOnce'; Origem = 'HKCU:RunOnce' }
+        @{ Escopo = 'TodosUsuarios'; Chave = 'Run'; Origem = 'HKLM:Run' }
+        @{ Escopo = 'TodosUsuarios'; Chave = 'RunOnce'; Origem = 'HKLM:RunOnce' }
+    )
+    foreach ($c in $combinacoes) {
+        $caminho = Get-CaminhoRegistroRun -Escopo $c.Escopo -Chave $c.Chave
+        $caminhoAprovado = Get-CaminhoStartupApproved -Escopo $c.Escopo -Secao 'Run'
+        if (Test-Path $caminho) {
+            $propriedades = Get-ItemProperty -Path $caminho -ErrorAction SilentlyContinue
+            if ($propriedades) {
+                foreach ($nomeProp in ($propriedades.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS(Path|ParentPath|ChildName|Drive|Provider)$' })) {
+                    $valorAprovado = Get-ValorStartupApproved -CaminhoChave $caminhoAprovado -Nome $nomeProp.Name
+                    $itens.Add((ConvertTo-ItemInicializacao -Nome $nomeProp.Name -Comando $nomeProp.Value -Origem $c.Origem -ValorStartupApproved $valorAprovado))
+                }
+            }
+        }
+    }
+    # WOW6432Node: so existe/faz sentido em Windows 64-bit; Test-Path cobre a ausencia.
+    foreach ($chave in @('Run', 'RunOnce')) {
+        $caminhoWow = Get-CaminhoRegistroRunWow6432 -Chave $chave
+        if (Test-Path $caminhoWow) {
+            $propriedades = Get-ItemProperty -Path $caminhoWow -ErrorAction SilentlyContinue
+            if ($propriedades) {
+                foreach ($nomeProp in ($propriedades.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS(Path|ParentPath|ChildName|Drive|Provider)$' })) {
+                    # Espelho de StartupApproved para WOW6432Node NAO confirmado —
+                    # reporta o item sem tentar ler um estado habilitado/desabilitado.
+                    $itens.Add((ConvertTo-ItemInicializacao -Nome $nomeProp.Name -Comando $nomeProp.Value -Origem "HKLM:WOW6432Node:$chave" -ValorStartupApproved $null))
+                }
+            }
+        }
+    }
+    return $itens
+}
+
+function Get-ItensPastaInicializacao {
+    $itens = [System.Collections.Generic.List[object]]::new()
+    $pastas = @(
+        @{ Caminho = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup'; Origem = 'PastaUsuario' }
+        @{ Caminho = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Startup'; Origem = 'PastaTodosUsuarios' }
+    )
+    foreach ($p in $pastas) {
+        if (Test-Path $p.Caminho) {
+            Get-ChildItem -Path $p.Caminho -File -ErrorAction SilentlyContinue | ForEach-Object {
+                $itens.Add((ConvertTo-ItemInicializacao -Nome $_.Name -Comando $_.FullName -Origem $p.Origem -ValorStartupApproved $null))
+            }
+        }
+    }
+    return $itens
+}
+
+function Get-TarefasComGatilhoLogon {
+    # Somente informativo — nunca habilitado/desabilitado por este script (nao
+    # aparecem na aba Inicializar do Task Manager, consenso tecnico forte mas nao
+    # documentado oficialmente pela Microsoft; nao misturar com o toggle abaixo).
+    try {
+        Get-ScheduledTask -ErrorAction Stop | Where-Object {
+            $_.Triggers | Where-Object { $_.CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' }
+        } | Select-Object TaskName, TaskPath, State
+    }
+    catch {
+        Write-Log ('Nao foi possivel listar Tarefas Agendadas: {0}' -f $_.Exception.Message) 'Aviso'
+        @()
+    }
+}
+
+function Invoke-AcaoListar {
+    Write-Log 'Registro (Run/RunOnce, HKCU + HKLM + WOW6432Node):' 'Titulo'
+    $itensRegistro = Get-ItensRegistroRun
+    $itensRegistro | Format-Table Nome, Origem, Habilitado, Comando -AutoSize -Wrap
+
+    Write-Log 'Pastas de Inicializacao:' 'Titulo'
+    $itensPasta = Get-ItensPastaInicializacao
+    $itensPasta | Format-Table Nome, Origem, Comando -AutoSize -Wrap
+
+    Write-Log 'Tarefas Agendadas com gatilho de logon (informativo — NAO aparecem no Task Manager, nunca alteradas por este script):' 'Titulo'
+    Get-TarefasComGatilhoLogon | Format-Table TaskName, TaskPath, State -AutoSize
+}
+
+function Invoke-AcaoAdicionar {
+    param([Parameter(Mandatory)][string]$Nome, [Parameter(Mandatory)][string]$Comando, [Parameter(Mandatory)][string]$Escopo)
+    [void](Confirm-Acao -Descricao ('Adicionar "{0}" = "{1}" em Run (escopo: {2}).' -f $Nome, $Comando, $Escopo))
+    $caminho = Get-CaminhoRegistroRun -Escopo $Escopo -Chave 'Run'
+    if (-not (Test-Path $caminho)) { New-Item -Path $caminho -Force | Out-Null }
+    Set-ItemProperty -Path $caminho -Name $Nome -Value $Comando -Type String -Force
+    Write-Log ('Adicionado: {0}' -f $Nome) 'Ok'
+}
+
+function Invoke-AcaoRemover {
+    param([Parameter(Mandatory)][string]$Nome, [Parameter(Mandatory)][string]$Escopo)
+    [void](Confirm-Acao -Descricao ('Remover "{0}" de Run (escopo: {1}).' -f $Nome, $Escopo))
+    $caminho = Get-CaminhoRegistroRun -Escopo $Escopo -Chave 'Run'
+    if (-not (Test-Path $caminho) -or -not (Get-ItemProperty -Path $caminho -Name $Nome -ErrorAction SilentlyContinue)) {
+        Write-Log ('"{0}" nao encontrado em Run (escopo: {1}) — nada a remover.' -f $Nome, $Escopo) 'Aviso'
+        return
+    }
+    Remove-ItemProperty -Path $caminho -Name $Nome -Force
+    Write-Log ('Removido: {0}' -f $Nome) 'Ok'
+}
+
+function Invoke-AcaoToggleExperimental {
+    param([Parameter(Mandatory)][string]$Nome, [Parameter(Mandatory)][string]$Escopo, [Parameter(Mandatory)][bool]$Habilitado)
+
+    if (-not $PermitirExperimental) {
+        Write-Log 'Esta acao (toggle estilo Task Manager via StartupApproved) exige -PermitirExperimental — formato binario nao documentado oficialmente pela Microsoft.' 'Erro'
+        Write-Log 'Alternativa segura e documentada: use -AcaoInicializacao Remover para desativar de forma definitiva e reversivel.' 'Info'
+        exit 2
+    }
+
+    $buildAtual = [int](Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
+    if (-not (Test-BuildValidado -BuildAtual $buildAtual -BuildsValidados $script:BuildsValidados)) {
+        Write-Log ("Build $buildAtual do Windows nao esta na lista de builds validados em VM para esta acao (lista atual: $($script:BuildsValidados -join ', ')). Comportamento nao confirmado neste build.") 'Aviso'
+        if ($NaoInterativo -and -not $ForcarBuildNaoValidado) {
+            Write-Log 'Modo nao interativo: use -ForcarBuildNaoValidado para prosseguir mesmo sem validacao do build.' 'Erro'
+            exit 2
+        }
+        if (-not $NaoInterativo) {
+            $resposta = Read-Host 'Continuar mesmo assim, neste build nao validado? (S/N)'
+            if ($resposta -notmatch '^[sS]') { Write-Log 'Cancelado pelo usuario.' 'Info'; exit 4 }
+        }
+    }
+
+    [void](Confirm-Acao -Descricao ('{0} "{1}" via StartupApproved (escopo: {2}) — toggle experimental estilo Task Manager.' -f $(if ($Habilitado) { 'Habilitar' } else { 'Desabilitar' }), $Nome, $Escopo))
+
+    $caminhoStartupApproved = Get-CaminhoStartupApproved -Escopo $Escopo -Secao 'Run'
+    if (-not (Test-Path $caminhoStartupApproved)) { New-Item -Path $caminhoStartupApproved -Force | Out-Null }
+
+    $valorAtual = Get-ValorStartupApproved -CaminhoChave $caminhoStartupApproved -Nome $Nome
+    if ($null -eq $valorAtual) {
+        Write-Log 'Nenhuma entrada StartupApproved existente para este item — criando valor completo de 12 bytes (Windows trata "ausente" como habilitado por padrao).' 'Info'
+        $novoValor = New-ValorStartupApproved -Habilitado $Habilitado
+    }
+    else {
+        Write-Log ('Valor atual (backup, hex): {0}' -f (($valorAtual | ForEach-Object { $_.ToString('X2') }) -join ' ')) 'Info'
+        $novoValor = Set-PrimeiroByteStartupApproved -ValorAtual $valorAtual -Habilitado $Habilitado
+    }
+
+    Set-ItemProperty -Path $caminhoStartupApproved -Name $Nome -Value $novoValor -Type Binary -Force
+
+    $valorRelido = Get-ValorStartupApproved -CaminhoChave $caminhoStartupApproved -Nome $Nome
+    $flagEsperada = if ($Habilitado) { @(0x02, 0x06) } else { @(0x03) }
+    if ($null -eq $valorRelido -or $valorRelido[0] -notin $flagEsperada) {
+        Write-Log ('Escreveu, mas a releitura NAO confirmou o estado esperado. Valor relido (hex): {0}' -f $(if ($valorRelido) { ($valorRelido | ForEach-Object { $_.ToString('X2') }) -join ' ' } else { '(vazio)' })) 'Erro'
+        Write-Log 'O registro pode estar num estado nao verificado — confira manualmente no Task Manager.' 'Erro'
+        exit 5
+    }
+    Write-Log ('Confirmado por releitura: {0}' -f $Nome) 'Ok'
+}
+
+#endregion
+
 #region Fluxo principal ----------------------------------------------------------
 
 if (-not $Modo -and $NaoInterativo) {
@@ -2134,8 +2387,53 @@ switch ($Modo) {
         exit $codigoSaida
     }
     'Inicializacao' {
-        Write-Log "Modo 'Inicializacao' ainda sera implementado na Fase 4 deste projeto." 'Erro'
-        exit 9
+        # Sempre eleva, mesmo so pra Listar (varias chaves envolvidas ficam em HKLM).
+        Assert-Admin -ParametrosOriginais $PSBoundParameters
+        Start-Logging -CaminhoPersonalizado $CaminhoLog -Prefixo 'startup'
+
+        Write-Log ('Modo Inicializacao — acao "{0}"' -f $AcaoInicializacao) 'Titulo'
+        if ($script:ArquivoLog) { Write-Log ('Log: {0}' -f $script:ArquivoLog) 'Info' }
+
+        try {
+            switch ($AcaoInicializacao) {
+                'Listar' {
+                    Invoke-AcaoListar
+                }
+                'Adicionar' {
+                    if (-not $Nome -or -not $Comando) {
+                        Write-Log '-AcaoInicializacao Adicionar exige -Nome e -Comando.' 'Erro'
+                        exit 2
+                    }
+                    Invoke-AcaoAdicionar -Nome $Nome -Comando $Comando -Escopo $Escopo
+                }
+                'Remover' {
+                    if (-not $Nome) {
+                        Write-Log '-AcaoInicializacao Remover exige -Nome.' 'Erro'
+                        exit 2
+                    }
+                    Invoke-AcaoRemover -Nome $Nome -Escopo $Escopo
+                }
+                'Habilitar' {
+                    if (-not $Nome) {
+                        Write-Log '-AcaoInicializacao Habilitar exige -Nome.' 'Erro'
+                        exit 2
+                    }
+                    Invoke-AcaoToggleExperimental -Nome $Nome -Escopo $Escopo -Habilitado $true
+                }
+                'Desabilitar' {
+                    if (-not $Nome) {
+                        Write-Log '-AcaoInicializacao Desabilitar exige -Nome.' 'Erro'
+                        exit 2
+                    }
+                    Invoke-AcaoToggleExperimental -Nome $Nome -Escopo $Escopo -Habilitado $false
+                }
+            }
+        }
+        finally {
+            Stop-LoggingSeAtivo
+        }
+
+        exit 0
     }
     default {
         Write-Log "Menu principal ainda sera implementado na Fase 5 deste projeto. Use -Modo por enquanto." 'Erro'

@@ -7,11 +7,11 @@ opção complementar para quem quer tudo junto, não uma substituição. Arquivo
 dependências, Windows PowerShell 5.1 — mesmo padrão de todos os repos irmãos.
 
 **Projeto construído em fases** (script final gira em torno de 3000+ linhas). Estado atual:
-**Fases 1-3 concluídas** (esqueleto + catálogo fundido completo: 11 itens do WinFaxina +
-66 do Debloat10/11 — `-Modo Faxina`/`Debloat`/`Tudo` todos funcionais); **Fase 4 em
-andamento** (Grupo B, do mais seguro ao mais arriscado — `Diagnostico` feito;
-`AdminOculto`/`SafeBoot`/`Inicializacao` pendentes). Cada modo/fase vira um push próprio
-para `main`; os pendentes ainda saem com código 9 e aviso "ainda será implementado".
+**Fases 1-4 concluídas** — os 6 modos (catálogo fundido: `Faxina`/`Debloat`/`Tudo`; Grupo
+B: `Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao`) todos funcionais. Falta só a
+**Fase 5** (menu principal `Show-MenuFerramentas`, passe final de docs, remover a
+supressão temporária de `PSReviewUnusedParameter`, CI consolidado). Cada modo/fase virou
+um push próprio para `main`. Sem `-Modo`, o script ainda sai com código 9 até a Fase 5.
 
 ## Arquitetura: duas famílias, não uma
 
@@ -194,7 +194,16 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
      NUNCA chama a `Confirm-Acao` genérica, só a própria); `Show-MainMenu` virou
      `Show-MainMenuSafeBoot`. `Set-SafeBoot` relê o estado real após `bcdedit`, nunca
      confia só no exit code (coberto por teste AST).
-   - Inicializacao — pendente (última do Grupo B; maior, mais crítica em segurança).
+   - ~~Inicializacao~~ — **feito** (última do Grupo B, portada por último de propósito).
+     `Confirm-Acao` genérica confirmada como já sendo a versão deste modo (origem desde a
+     Fase 1, nenhuma mudança necessária). As 5 camadas de segurança do toggle
+     `Habilitar`/`Desabilitar` via `StartupApproved` preservadas: gate de
+     `-PermitirExperimental` primeiro (antes de qualquer `Get-CimInstance`, coberto por
+     teste AST), checagem de build contra `$script:BuildsValidados` (vazio de propósito),
+     só o byte 0 é escrito preservando os outros 11, releitura confirma antes de reportar
+     sucesso. `Test-BuildValidado` (a correção do bug `Mandatory`+array vazio) coberta por
+     fixture regressiva. CI prova um round-trip real de Adicionar+Remover contra HKCU do
+     próprio runner — não só leitura.
 5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
    etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
    manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`
@@ -219,6 +228,21 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
   comando Docker** — nunca o contrário. Também: comandos Docker em background NÃO herdam
   `cd` de uma chamada anterior separada (mesmo foreground) — sempre prefixar com
   `cd <caminho-absoluto-do-repo> &&` explícito, mesmo que pareça redundante.
+- **Achado real da Fase 4 (Inicializacao), sobre escopo do Pester 5 ao extrair funções via
+  AST + `Invoke-Expression`** (o padrão usado em todo `*.Tests.ps1` deste projeto para
+  testar funções puras com fixture, sem rodar o script inteiro): (1) uma função declarada
+  solta no topo de um arquivo `.Tests.ps1`, **fora** de `Describe`/`BeforeAll`, só existe
+  na fase de Discovery do Pester 5 — some antes da fase de Run, onde `BeforeEach`/`It`
+  realmente executam (`CommandNotFoundException`). Sempre declarar dentro de um
+  `BeforeAll` de nível superior. (2) Mais sutil: se esse `Invoke-Expression
+  $funcAst.Extent.Text` (o que DEFINE a função extraída) roda **dentro de uma função
+  helper própria** (ex.: um `Import-FuncaoIsolada` chamado de dentro do `BeforeEach`), a
+  função recém-definida fica presa no escopo local do helper e desaparece assim que ele
+  retorna — mesmo sintoma (`CommandNotFoundException`), causa diferente. O padrão correto,
+  já usado em `Parametros.Tests.ps1`/`Catalogo.Tests.ps1`: `Invoke-Expression` direto no
+  corpo do `BeforeEach`, nunca indireto via outra função. Um helper que só devolve o
+  **texto** da função (sem executar `Invoke-Expression`) é seguro de chamar através de
+  função normal — só a definição em si precisa ficar no nível certo.
 - CI (GitHub Actions): cresce junto com o script — lint + Pester desde a Fase 1; uma etapa
   de execução real por modo é adicionada na mesma fase em que o modo é implementado.
 - **Achado real da Fase 2, confirmado em execução real no runner**: o `windows-latest`

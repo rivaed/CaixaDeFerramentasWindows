@@ -4,12 +4,10 @@ Caixa de ferramentas unificada para Windows: um arquivo só, zero dependências,
 debloat (detecta Windows 10/11 automaticamente), faxina de disco, itens de inicialização,
 modo de segurança, administrador oculto e diagnóstico rápido.
 
-> **Em construção por fases.** Esta versão (`0.1.0`) já tem `-Modo Faxina`, `-Modo Debloat`
-> e `-Modo Tudo` funcionais (o Debloat detecta Windows 10/11 automaticamente e filtra o
-> catálogo); os demais modos ainda saem com aviso "não implementado". Se você precisa de
-> uma ferramenta que ainda não chegou aqui, use um dos repositórios individuais abaixo —
-> todos continuam mantidos separadamente e esta caixa é um pacote complementar, não uma
-> substituição.
+> **Em construção por fases.** Esta versão (`0.1.0`) já tem os 6 modos funcionais — só o
+> menu principal interativo (sem `-Modo`) ainda está pendente; até lá, use sempre `-Modo`
+> explícito. Os repositórios individuais abaixo continuam mantidos separadamente; esta
+> caixa é um pacote complementar, não uma substituição.
 
 ```powershell
 # Faxina de disco
@@ -20,7 +18,24 @@ modo de segurança, administrador oculto e diagnóstico rápido.
 
 # Os dois juntos
 .\CaixaDeFerramentasWindows.ps1 -Modo Tudo -NaoInterativo -Perfil Completo
+
+# Diagnostico rapido (Visualizador de Eventos, nunca eleva)
+.\CaixaDeFerramentasWindows.ps1 -Modo Diagnostico -NaoInterativo -Dias 30
+
+# Administrador oculto (so ver o estado - nunca altera nada)
+.\CaixaDeFerramentasWindows.ps1 -Modo AdminOculto -NaoInterativo -AcaoAdmin Status
+
+# Modo de Seguranca (so ver o estado - nunca altera nada)
+.\CaixaDeFerramentasWindows.ps1 -Modo SafeBoot -NaoInterativo -AcaoSafeBoot Status
+
+# Itens de inicializacao (listar - nunca altera nada)
+.\CaixaDeFerramentasWindows.ps1 -Modo Inicializacao -NaoInterativo -AcaoInicializacao Listar
 ```
+
+Sem `-Modo`, o script mostra este texto e sai (código 9) até o menu principal da Fase 5
+existir. Todo modo que faz alteração precisa de `-NaoInterativo` **e** `-Confirmar` juntos
+(ou rodar interativo, que pede confirmação na hora) — nunca altera nada sem confirmação
+explícita.
 
 ## Repositórios individuais (funcionam hoje)
 
@@ -43,7 +58,7 @@ modo de segurança, administrador oculto e diagnóstico rápido.
 | `Diagnostico` | DiagnosticoRapidoDePC | ✅ Implementado |
 | `AdminOculto` | ativar-win-admin | ✅ Implementado |
 | `SafeBoot` | SafeBoot-Ninja | ✅ Implementado |
-| `Inicializacao` | StartupAppsNinja | Pendente (Fase 4) |
+| `Inicializacao` | StartupAppsNinja | ✅ Implementado |
 | Menu principal (sem `-Modo`) | — | Pendente (Fase 5) |
 
 Progresso detalhado: [CHANGELOG.md](CHANGELOG.md). Decisões de arquitetura e critérios de

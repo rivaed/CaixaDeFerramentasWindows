@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[Inicializacao]** Modo `-Modo Inicializacao` funcional — o maior e mais crítico em
+  segurança do Grupo B, portado por último de propósito. `Listar`/`Adicionar`/`Remover`
+  contra as chaves `Run`/`RunOnce` (`HKCU`+`HKLM`+`WOW6432Node`), sempre eleva (mesmo só
+  para `Listar` — várias chaves ficam em `HKLM`). `Habilitar`/`Desabilitar` (toggle estilo
+  Task Manager via `StartupApproved`, formato binário de 12 bytes não documentado pela
+  Microsoft) preserva as 5 camadas de segurança originais: exige `-PermitirExperimental`
+  (mesmo com `-NaoInterativo`), checa o build contra `$script:BuildsValidados` (vazio de
+  propósito — nenhum build validado em VM ainda), grava só o byte 0 preservando os outros
+  11, e **relê o valor escrito** para confirmar antes de reportar sucesso.
+  `Confirm-Acao` genérica (`param($Descricao)`) tem aqui sua origem — já existia desde a
+  Fase 1. Regressão do bug real coberta por teste: `Test-BuildValidado` aceita
+  `-BuildsValidados @()` (ou omitido) sem lançar `ParameterBindingValidationException`.
+  CI ganhou um round-trip real de `Adicionar`+`Remover` contra `HKCU` do próprio runner
+  (escopo `Usuario`, reversível) — prova o caminho de escrita de verdade, não só leitura.
+  `Habilitar`/`Desabilitar` deliberadamente **não** testado em CI: formato ainda
+  experimental, não é escopo forçar esse caminho fora de uma VM validada manualmente.
 - **[SafeBoot]** Modo `-Modo SafeBoot` funcional: liga/desliga o Modo de Segurança
   (mínimo/com rede) via `bcdedit`, sempre **relendo o estado real** depois de aplicar
   (nunca confia só no exit code). Resolvido o Bloqueio B do plano: `Confirm-Acao`
@@ -106,11 +122,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto`/`SafeBoot` executam lógica
-  real nesta versão. `Inicializacao` continua saindo com código 9 e aviso "ainda será
-  implementado". Ver "Status de implementação" no README.
-- Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros do
-  modo `Inicializacao` (o único ainda não implementado) já existem no `param()` fundido
-  (decisão deliberada — resolver toda
-  colisão de nome de uma vez só no esqueleto), mas não são consumidos até sua fase
-  ser implementada. Remover a supressão na Fase 5.
+- **Todos os 6 modos do catálogo/Grupo B agora executam lógica real**
+  (`Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao`) — Fase
+  4 concluída. Falta só o menu principal (sem `-Modo`), que continua saindo com código 9.
+  Ver "Status de implementação" no README.
+- Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1` ainda não removida
+  nesta versão — todo parâmetro do `param()` fundido já é consumido por algum modo agora,
+  então a supressão deveria ser puramente redundante. Remoção + confirmação via
+  PSScriptAnalyzer ficam para a Fase 5 (junto do passe final de docs), não neste commit.

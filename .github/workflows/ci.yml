@@ -133,3 +133,42 @@ jobs:
             exit 1
           }
           Write-Host 'OK: -Modo SafeBoot -AcaoSafeBoot Status executado com sucesso no runner real.'
+
+      - name: Execucao real (Modo Inicializacao, Listar + Adicionar/Remover round-trip em HKCU)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo Inicializacao -NaoInterativo -AcaoInicializacao Listar
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado (Listar): $LASTEXITCODE"
+            exit 1
+          }
+
+          # Adicionar/Remover reais contra HKCU (escopo Usuario, reversivel) - prova o
+          # caminho de escrita de verdade, nao so leitura. NAO testa Habilitar/
+          # Desabilitar (StartupApproved): formato binario ainda experimental, gated
+          # por -PermitirExperimental de proposito, $script:BuildsValidados vazio ate
+          # ser validado em VM real - nao e escopo deste CI forcar esse caminho.
+          $nomeTeste = 'CaixaDeFerramentasWindowsTesteCI'
+          .\CaixaDeFerramentasWindows.ps1 -Modo Inicializacao -NaoInterativo -Confirmar -AcaoInicializacao Adicionar -Nome $nomeTeste -Comando 'C:\Windows\System32\cmd.exe /c exit' -Escopo Usuario
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado (Adicionar): $LASTEXITCODE"
+            exit 1
+          }
+          $valorAdicionado = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $nomeTeste -ErrorAction SilentlyContinue
+          if (-not $valorAdicionado) {
+            Write-Error 'A entrada de teste nao foi encontrada em HKCU:...\Run apos Adicionar.'
+            exit 1
+          }
+          Write-Host "OK: entrada '$nomeTeste' adicionada e confirmada em HKCU:...\Run."
+
+          .\CaixaDeFerramentasWindows.ps1 -Modo Inicializacao -NaoInterativo -Confirmar -AcaoInicializacao Remover -Nome $nomeTeste -Escopo Usuario
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado (Remover): $LASTEXITCODE"
+            exit 1
+          }
+          $valorRemovido = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $nomeTeste -ErrorAction SilentlyContinue
+          if ($valorRemovido) {
+            Write-Error 'A entrada de teste ainda existe em HKCU:...\Run apos Remover.'
+            exit 1
+          }
+          Write-Host 'OK: -Modo Inicializacao (Listar + Adicionar/Remover) executado com sucesso no runner real.'
