@@ -161,6 +161,12 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
   temporária documentada acima até a Fase 5).
 - CI (GitHub Actions): cresce junto com o script — lint + Pester desde a Fase 1; uma etapa
   de execução real por modo é adicionada na mesma fase em que o modo é implementado.
+- **Achado real da Fase 2, confirmado em execução real no runner**: o `windows-latest`
+  do GitHub Actions relata `VersaoWindowsDetectada=Desconhecido` (não é `ProductType=1`
+  de workstation Win10/11 de verdade). Não é bug — `Assert-VersaoSuportada` avisa e
+  segue em frente porque a etapa de CI roda com `-Simular`; NÃO adicionar uma asserção
+  de `VersaoWindowsDetectada` no CI esperando `Win10`/`Win11` (quebraria à toa, mesma
+  classe de cuidado já documentada no `AuditaAdminsLocais` para `Status=Inalcancavel`).
 - Antes de confiar em produção: VM Windows real, `-Simular` primeiro, depois
   `Minimo`/`Status`, nos 6 modos — mesma limitação já documentada nos 6 repos originais.
 
