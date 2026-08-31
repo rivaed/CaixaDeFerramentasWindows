@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  validar:
+    name: Lint e testes
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PSScriptAnalyzer
+        shell: powershell
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $resultados = Invoke-ScriptAnalyzer -Path .\CaixaDeFerramentasWindows.ps1 -Severity Warning, Error
+          $resultados | Format-Table RuleName, Severity, Line, Message -AutoSize | Out-String -Width 200 | Write-Host
+          if ($resultados) {
+            Write-Error "$($resultados.Count) apontamento(s) do PSScriptAnalyzer."
+            exit 1
+          }
+
+      - name: Pester (testes estruturais)
+        shell: powershell
+        run: |
+          Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester -MinimumVersion 5.0
+          Invoke-Pester -Path .\tests -Output Detailed -CI
+
+      # A partir da Fase 2, cada modo implementado ganha aqui sua propria etapa de
+      # execucao real (mesmo padrao ja usado nos 6 repos originais) - nao colapsar
+      # todas num job so, para uma falha apontar exatamente qual modo quebrou.
