@@ -1,7 +1,7 @@
 # Testes do catalogo fundido (Debloat/Faxina/Tudo) — extraem o literal via AST e
 # avaliam isolado, sem rodar o resto do script (funciona em qualquer SO/Docker).
-# Fase 2: catalogo tem so os 11 itens portados do WinFaxina; Fase 3 adiciona
-# Apps/Telemetria/Desempenho (Debloat) — ver CLAUDE.md.
+# Fase 2 portou os 11 itens do WinFaxina; Fase 3 fundiu Windows10-Debloat +
+# Windows11-Debloat (Apps/Telemetria/Desempenho) — ver CLAUDE.md.
 
 BeforeAll {
     $script:CaminhoScript = Join-Path (Split-Path -Parent $PSScriptRoot) 'CaixaDeFerramentasWindows.ps1'
@@ -22,8 +22,16 @@ BeforeAll {
 }
 
 Describe 'Regras herdadas do WinFaxina (validas para o catalogo inteiro)' {
-    It 'nao tem item de catalogo para a pasta Prefetch (Microsoft desaconselha limpeza manual)' {
-        $item = $script:Catalogo | Where-Object { $_.Id -match 'prefetch' -or $_.Descricao -match 'Prefetch' }
+    It 'nao tem item de LIMPEZA da pasta Prefetch (Microsoft desaconselha limpeza manual)' {
+        # Restrito a Tipo=LimpezaPasta mirando a pasta - o item 'sysmain' (Servico,
+        # desativa o servico SysMain/Superfetch, legitimo e ja no Windows10-Debloat
+        # original) tem "Prefetch" na Descricao mas e uma coisa completamente
+        # diferente de apagar a PASTA Prefetch; um match textual amplo demais em
+        # Descricao ou Id daria falso positivo nele (achado ao rodar este teste
+        # apos a fusao do catalogo do Debloat).
+        $item = $script:Catalogo | Where-Object {
+            $_.Tipo -eq 'LimpezaPasta' -and ($_.Id -match 'prefetch' -or $_.Alvo -match 'Prefetch')
+        }
         $item | Should -BeNullOrEmpty
     }
 
@@ -157,6 +165,64 @@ Describe 'Catalogo' {
         @($script:Catalogo | Where-Object { $_.Nivel -eq 'Opcional' }).Count | Should -BeGreaterThan 0
         @($script:Catalogo | Where-Object { $_.Nivel -eq 'Agressivo' }).Count | Should -BeGreaterThan 0
     }
+
+    It 'todo Tipo de item usado no catalogo tem um case no switch de nivel superior (por Tipo) em Invoke-ItemCatalogo e em Get-AcaoDescricao' {
+        # Guarda irma da guarda de Especial/Alvo acima, mas um nivel acima: cobre o
+        # caso de esquecer um Tipo INTEIRO (ex.: nunca ter adicionado o case 'Appx'),
+        # nao so um Alvo especifico dentro de 'Especial'.
+        $tiposCatalogo = @($script:Catalogo | ForEach-Object { $_.Tipo } | Sort-Object -Unique)
+
+        foreach ($nomeFuncao in @('Invoke-ItemCatalogo', 'Get-AcaoDescricao')) {
+            $funcao = $script:Ast.FindAll({
+                    param($no)
+                    $no -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $no.Name -eq $nomeFuncao
+                }, $true) | Select-Object -First 1
+            $switchTipo = $funcao.FindAll({
+                    param($no)
+                    $no -is [System.Management.Automation.Language.SwitchStatementAst] -and
+                    $no.Condition.Extent.Text -match '\$Item\.Tipo'
+                }, $true) | Select-Object -First 1
+            $switchTipo | Should -Not -BeNullOrEmpty -Because "'$nomeFuncao' precisa ter um switch sobre `$Item.Tipo"
+
+            $casesTipo = @($switchTipo.Clauses | ForEach-Object { $_.Item1.Value })
+            foreach ($tipo in $tiposCatalogo) {
+                $casesTipo | Should -Contain $tipo -Because "Tipo='$tipo' presente no catalogo precisa de um case em '$nomeFuncao'"
+            }
+        }
+    }
+
+    It 'nenhum pacote Appx (Alvo) e referenciado por mais de um Id de catalogo' {
+        # Id ja e garantido unico (teste acima); isso pega o erro adjacente: dois
+        # Ids diferentes apontando sem querer pro MESMO pacote (copia colada errada
+        # ao fundir os dois catalogos do Debloat).
+        $alvosAppx = @($script:Catalogo | Where-Object { $_.Tipo -eq 'Appx' } | ForEach-Object { $_.Alvo })
+        ($alvosAppx | Sort-Object -Unique).Count | Should -Be $alvosAppx.Count
+    }
+
+    It 'cdm-w10 e cdm-w11 existem, cada um so no seu SO, e so o nome do SubscribedContent difere entre eles' {
+        # O motivo real desses serem DOIS itens (nao um so com SistemasAlvo ausente):
+        # o NOME do valor de registro difere de verdade entre W10 e W11 (nao e so
+        # drift de copia, como bing-iniciar/widgets-botao) - ver CLAUDE.md, Bloqueio A.
+        $cdmW10 = $script:Catalogo | Where-Object { $_.Id -eq 'cdm-w10' }
+        $cdmW11 = $script:Catalogo | Where-Object { $_.Id -eq 'cdm-w11' }
+        $cdmW10 | Should -Not -BeNullOrEmpty
+        $cdmW11 | Should -Not -BeNullOrEmpty
+        $cdmW10.SistemasAlvo | Should -Be @('Win10')
+        $cdmW11.SistemasAlvo | Should -Be @('Win11')
+
+        $nomesW10 = @($cdmW10.Valores | ForEach-Object { $_.Nome } | Sort-Object)
+        $nomesW11 = @($cdmW11.Valores | ForEach-Object { $_.Nome } | Sort-Object)
+        $cdmW10.Valores.Count | Should -Be 10
+        $cdmW11.Valores.Count | Should -Be 10
+        $nomesW10 | Should -Contain 'SubscribedContent-310093Enabled'
+        $nomesW11 | Should -Contain 'SubscribedContent-353696Enabled'
+
+        # Os outros 9 valores (tudo exceto o SubscribedContent especifico do SO) sao
+        # identicos nos dois - se algum dia divergirem sem querer, este teste pega.
+        $compartilhadosW10 = @($nomesW10 | Where-Object { $_ -ne 'SubscribedContent-310093Enabled' } | Sort-Object)
+        $compartilhadosW11 = @($nomesW11 | Where-Object { $_ -ne 'SubscribedContent-353696Enabled' } | Sort-Object)
+        (Compare-Object $compartilhadosW10 $compartilhadosW11 -SyncWindow 0 | Measure-Object).Count | Should -Be 0
+    }
 }
 
 Describe 'CategoriasPorModo: -Modo pre-filtra Categorias (o "motor unico" do plano)' {
@@ -197,19 +263,19 @@ Describe 'CategoriasPorModo: -Modo pre-filtra Categorias (o "motor unico" do pla
         $script:CategoriasFaxina | Should -Be @('Temporarios', 'Navegadores', 'Sistema', 'Lixeira')
     }
 
-    It 'Debloat reserva as categorias que a Fase 3 vai preencher' {
-        $script:CategoriasDebloat | Should -Be @('Apps', 'Telemetria', 'Desempenho', 'Sistema')
+    It 'Debloat cobre Apps/Telemetria/Desempenho (sem Sistema)' {
+        # Confirmado direto no codigo-fonte (Fase 3): nem Windows10-Debloat nem
+        # Windows11-Debloat jamais tiveram uma categoria "Sistema" - so
+        # Apps|Telemetria|Desempenho|Limpeza. "Sistema" e 100% origem WinFaxina
+        # (update-cache/dism-cleanup/patch-cache/fila-impressao) - incluir Sistema
+        # aqui faria -Modo Debloat tambem rodar essa faxina de disco, que nao e o
+        # esperado (quem quer isso usa -Modo Faxina ou -Modo Tudo).
+        $script:CategoriasDebloat | Should -Be @('Apps', 'Telemetria', 'Desempenho')
     }
 
-    It 'Sistema e a unica categoria que Faxina e Debloat compartilham de proposito' {
-        # Nao e um erro os dois modos apontarem para "Sistema" - e a mesma categoria
-        # do esquema fundido para ajustes de sistema de qualquer origem (cache de
-        # update/DISM/spooler do lado Faxina; tweaks de registro/servico do lado
-        # Debloat na Fase 3). O invariante real e no ITEM (Id unico, ja coberto em
-        # 'Catalogo'), nao na categoria - varios modos podem apontar pra mesma
-        # categoria sem que isso duplique nenhum item.
+    It 'Faxina e Debloat nao compartilham nenhuma categoria' {
         $intersecao = @($script:CategoriasFaxina | Where-Object { $script:CategoriasDebloat -contains $_ })
-        $intersecao | Should -Be @('Sistema')
+        $intersecao | Should -BeNullOrEmpty
     }
 
     It 'Tudo referencia $script:Categorias por construcao, nao duplica a lista a mao (evita drift)' {
@@ -225,11 +291,53 @@ Describe 'CategoriasPorModo: -Modo pre-filtra Categorias (o "motor unico" do pla
         $script:EntradasMapa['Tudo'].Trim() | Should -Be '$script:Categorias'
     }
 
-    It 'todo item do catalogo atual (Fase 2) cai dentro das categorias de Faxina' {
-        # Confirma que o -Modo Faxina de fato mostra/seleciona os 11 itens de hoje -
-        # e o teste que prova que o pre-filtro nao esta descartando nada indevidamente.
-        foreach ($item in $script:Catalogo) {
-            $script:CategoriasFaxina | Should -Contain $item.Categoria -Because "item '$($item.Id)' (categoria '$($item.Categoria)') deveria ser alcancavel via -Modo Faxina"
+    It 'todo item das 4 categorias de origem WinFaxina cai dentro de Faxina, nunca de Debloat' {
+        $categoriasWinFaxina = @('Temporarios', 'Navegadores', 'Sistema', 'Lixeira')
+        $itensWinFaxina = $script:Catalogo | Where-Object { $categoriasWinFaxina -contains $_.Categoria }
+        $itensWinFaxina.Count | Should -BeGreaterThan 0
+        foreach ($item in $itensWinFaxina) {
+            $script:CategoriasFaxina | Should -Contain $item.Categoria -Because "item '$($item.Id)' deveria ser alcancavel via -Modo Faxina"
+            $script:CategoriasDebloat | Should -Not -Contain $item.Categoria -Because "item '$($item.Id)' (origem WinFaxina) nao deveria aparecer em -Modo Debloat"
         }
+    }
+
+    It 'todo item das 3 categorias de origem Debloat cai dentro de Debloat, nunca de Faxina' {
+        $categoriasDebloat = @('Apps', 'Telemetria', 'Desempenho')
+        $itensDebloat = $script:Catalogo | Where-Object { $categoriasDebloat -contains $_.Categoria }
+        $itensDebloat.Count | Should -BeGreaterThan 0
+        foreach ($item in $itensDebloat) {
+            $script:CategoriasDebloat | Should -Contain $item.Categoria -Because "item '$($item.Id)' deveria ser alcancavel via -Modo Debloat"
+            $script:CategoriasFaxina | Should -Not -Contain $item.Categoria -Because "item '$($item.Id)' (origem Debloat) nao deveria aparecer em -Modo Faxina"
+        }
+    }
+}
+
+Describe 'Test-ItemAplicavelAoSO: filtro por SistemasAlvo (novo motor da Fase 3)' {
+    BeforeEach {
+        $funcAst = $script:Ast.FindAll({
+                param($no)
+                $no -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $no.Name -eq 'Test-ItemAplicavelAoSO'
+            }, $true) | Select-Object -First 1
+        Invoke-Expression $funcAst.Extent.Text
+    }
+
+    It 'item sem SistemasAlvo vale para qualquer SO detectado' {
+        $item = [pscustomobject]@{ Id = 'x' }
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win10' | Should -BeTrue
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win11' | Should -BeTrue
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Desconhecido' | Should -BeTrue
+    }
+
+    It 'item com SistemasAlvo=Win10 so vale quando o SO detectado e Win10' {
+        $item = [pscustomobject]@{ Id = 'x'; SistemasAlvo = @('Win10') }
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win10' | Should -BeTrue
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win11' | Should -BeFalse
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Desconhecido' | Should -BeFalse
+    }
+
+    It 'item com SistemasAlvo=Win11 so vale quando o SO detectado e Win11' {
+        $item = [pscustomobject]@{ Id = 'x'; SistemasAlvo = @('Win11') }
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win10' | Should -BeFalse
+        Test-ItemAplicavelAoSO -Item $item -VersaoWindows 'Win11' | Should -BeTrue
     }
 }

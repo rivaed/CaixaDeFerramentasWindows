@@ -5,6 +5,36 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[Debloat]** Modo `-Modo Debloat`/`-Modo Tudo` funcionais: fusão dos catálogos do
+  Windows10-Debloat e Windows11-Debloat (66 itens novos: 46 Apps, 11 Telemetria, 9
+  Desempenho) no mesmo motor único do `-Modo Faxina`. Novidades no motor: campo
+  `SistemasAlvo` (opcional; ausente = vale para os dois SOs) filtrado por
+  `Test-ItemAplicavelAoSO`, agora usado em `Get-ItensDoPerfil`/`Initialize-Selecao`/
+  `Get-ContagemCategoria`/`Show-CategoryMenu`/`Show-MainMenu`; novos executores
+  (`Remove-BloatApp`, `Disable-BloatService`, `Set-RegistryTweak`,
+  `Disable-BloatScheduledTask`, `Set-VisualEffectsPerformance`, `Remove-OneDriveApp`,
+  `Disable-RecallFeature`, `Get-InventarioAppx`); `Invoke-Selecao` agora inventaria
+  pacotes Appx uma vez antes do loop quando a seleção inclui algum; mensagem de
+  "reinicie o PC" ficou condicional a pelo menos um item `Appx`/`Servico`/`Registro`/
+  `TarefaAgendada` ter sido executado (antes incondicional no Debloat original);
+  `Test-UsuarioDivergente` promovida para rodar em todos os modos que elevam (antes
+  só existia no Debloat) — corrige de graça o mesmo risco para quem só usa Faxina.
+- **[Debloat]** Resolvido o Bloqueio A do plano: `temp-usuario`/`temp-sistema` do
+  Debloat foram descartados (colidiam com os do WinFaxina); `cdm` virou dois itens
+  (`cdm-w10`/`cdm-w11`, `SistemasAlvo` correspondente) porque o NOME do valor de
+  registro difere de verdade entre os dois SOs (`SubscribedContent-310093Enabled` vs.
+  `-353696Enabled`), não é só drift de cópia; `bing-iniciar`/`widgets-botao` viraram
+  item único cada (Valores idênticos nos dois scripts-fonte, só a Descrição tinha
+  drift de cópia entre os repos).
+- **[Debloat]** **Correção antes de qualquer execução real**: `Debloat` não tem —
+  nunca teve — a categoria `Sistema` (confirmado direto no código-fonte: os dois
+  scripts originais só usam `Apps|Telemetria|Desempenho|Limpeza`). O
+  `$script:CategoriasPorModo['Debloat']` definido na Fase 1 incluía `Sistema` por
+  suposição, antes de qualquer código do Debloat ter sido lido — isso teria feito
+  `-Modo Debloat` também rodar a faxina de disco do WinFaxina (DISM/patch-cache/
+  spooler) sem pedir. Corrigido para `@('Apps', 'Telemetria', 'Desempenho')` antes do
+  primeiro push desta fase; pego pela própria suíte de testes ao revisar a
+  intersecção Faxina×Debloat, não por execução em produção.
 - **[Faxina]** Modo `-Modo Faxina` funcional: catálogo com os 11 itens portados do
   WinFaxina (Temporários/Navegadores/Sistema/Lixeira), motor único de execução
   (`Invoke-ItemCatalogo`/`Get-AcaoDescricao`, renomeado de `Invoke-FaxinaItem` para
@@ -17,12 +47,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - **[Faxina]** `$script:CategoriasPorModo`: primeira prova do modelo "um motor só,
   `-Modo` pré-filtra `Categorias`" — `Get-ItensDoPerfil`/`Initialize-Selecao`/
   `Show-MainMenu` agora recebem a lista de categorias do modo em vez de usar uma
-  lista global fixa (o que a Fase 3 vai reaproveitar para `Debloat`/`Tudo` sem
-  alterar essas funções de novo). `Sistema` é a única categoria intencionalmente
-  compartilhada entre `Faxina` e `Debloat` — não é uma sobra a corrigir.
+  lista global fixa (reaproveitado pela Fase 3 para `Debloat`/`Tudo` sem alterar
+  essas funções de novo). `Faxina` e `Debloat` não compartilham nenhuma categoria
+  (ver correção acima — a nota original aqui dizia o contrário e estava errada).
 - **[Faxina]** CI: etapa de execução real (`-NaoInterativo -Simular -Perfil
   Agressivo`) contra o próprio runner `windows-latest`, validando o relatório JSON
   gerado (11 itens, `Modo`/`Simulacao` corretos).
+- **[Debloat]** CI: mesma etapa de execução real para `-Modo Debloat`. O runner do
+  GitHub Actions não é uma workstation Win10/11 de verdade (`VersaoWindowsDetectada`
+  vem `Desconhecido` — ver CLAUDE.md), então o teste confere um piso de 24 itens (os
+  que não têm `SistemasAlvo`, válidos em qualquer SO) em vez de um total fixo.
 - **[Esqueleto]** `#Requires -Version 5.1`, UTF-8 com BOM, help completo.
 - **[Esqueleto]** `param()` fundido com os 7 modos (`Debloat`, `Faxina`, `Tudo`,
   `Inicializacao`, `SafeBoot`, `AdminOculto`, `Diagnostico`) e todos os parâmetros
@@ -44,12 +78,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- Só `-Modo Faxina` executa lógica real nesta versão. `Debloat`/`Tudo`/`Diagnostico`/
-  `AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso
-  "ainda será implementado". Ver "Status de implementação" no README para o mapa de
-  fases.
+- `-Modo Faxina`/`Debloat`/`Tudo` executam lógica real nesta versão.
+  `Diagnostico`/`AdminOculto`/`SafeBoot`/`Inicializacao` continuam saindo com código
+  9 e aviso "ainda será implementado". Ver "Status de implementação" no README.
 - Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros
-  dos modos ainda não implementados (`Debloat`/`Inicializacao`/`SafeBoot`/
-  `AdminOculto`/`Diagnostico`) já existem no `param()` fundido (decisão deliberada —
-  resolver toda colisão de nome de uma vez só no esqueleto), mas não são consumidos
-  até sua fase ser implementada. Remover a supressão na Fase 5.
+  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`/`AdminOculto`/
+  `Diagnostico`) já existem no `param()` fundido (decisão deliberada — resolver toda
+  colisão de nome de uma vez só no esqueleto), mas não são consumidos até sua fase
+  ser implementada. Remover a supressão na Fase 5.

@@ -61,3 +61,35 @@ jobs:
             exit 1
           }
           Write-Host 'OK: -Modo Faxina (simulacao) executado com sucesso no runner real.'
+
+      - name: Execucao real (Modo Debloat, simulacao no proprio runner)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo Debloat -NaoInterativo -Perfil Agressivo -Simular -CaminhoRelatorioJson .\teste_debloat.json
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado: $LASTEXITCODE"
+            exit 1
+          }
+          if (-not (Test-Path .\teste_debloat.json)) {
+            Write-Error 'O relatorio JSON esperado nao foi gerado.'
+            exit 1
+          }
+          $relatorio = Get-Content .\teste_debloat.json -Raw | ConvertFrom-Json
+          Write-Host ("Modo={0} VersaoWindowsDetectada={1} Simulacao={2} Itens={3}" -f $relatorio.Modo, $relatorio.VersaoWindowsDetectada, $relatorio.Simulacao, $relatorio.Itens.Count)
+          if ($relatorio.Modo -ne 'Debloat') {
+            Write-Error 'Campo Modo do relatorio deveria ser "Debloat".'
+            exit 1
+          }
+          if (-not $relatorio.Simulacao) {
+            Write-Error 'Campo Simulacao do relatorio deveria ser true (rodamos com -Simular).'
+            exit 1
+          }
+          # 24 = itens Apps/Telemetria/Desempenho SEM SistemasAlvo (validos em
+          # qualquer SO) - o piso garantido independente de o runner reportar
+          # Win10/Win11/Desconhecido (ver CLAUDE.md sobre VersaoWindowsDetectada
+          # no CI - nao e um bug o runner reportar Desconhecido).
+          if ($relatorio.Itens.Count -lt 24) {
+            Write-Error "Esperava pelo menos 24 itens no relatorio (itens sem SistemasAlvo), veio $($relatorio.Itens.Count)."
+            exit 1
+          }
+          Write-Host 'OK: -Modo Debloat (simulacao) executado com sucesso no runner real.'

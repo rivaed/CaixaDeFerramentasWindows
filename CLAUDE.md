@@ -7,11 +7,11 @@ opção complementar para quem quer tudo junto, não uma substituição. Arquivo
 dependências, Windows PowerShell 5.1 — mesmo padrão de todos os repos irmãos.
 
 **Projeto construído em fases** (script final gira em torno de 3000+ linhas). Estado atual:
-**Fase 1 e Fase 2 concluídas** (esqueleto + `-Modo Faxina` funcional, provando o motor
-único de catálogo com os 11 itens do WinFaxina). Fases 3-5 pendentes — ver "Ordem de
-execução" abaixo. Cada fase vira um push próprio para `main`; **só `-Modo Faxina`
-executa lógica real** nesta versão — `Debloat`/`Tudo`/`Inicializacao`/`SafeBoot`/
-`AdminOculto`/`Diagnostico` ainda saem com código 9 e aviso "ainda será implementado".
+**Fases 1-3 concluídas** (esqueleto + catálogo fundido completo: 11 itens do WinFaxina +
+66 do Debloat10/11 — `-Modo Faxina`/`Debloat`/`Tudo` todos funcionais). Fases 4-5
+pendentes — ver "Ordem de execução" abaixo. Cada fase vira um push próprio para `main`;
+`Inicializacao`/`SafeBoot`/`AdminOculto`/`Diagnostico` ainda saem com código 9 e aviso
+"ainda será implementado".
 
 ## Arquitetura: duas famílias, não uma
 
@@ -52,34 +52,61 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
   mecânico mais perigoso da fusão. Ao portar cada modo (Fase 2-4), rodar essa suíte antes
   de seguir para o próximo.
 
-## Fusão do catálogo (Grupo A) — decisões já tomadas para a Fase 3
+## Fusão do catálogo (Grupo A) — decisões da Fase 3 (feita)
 
-- **`temp-usuario`/`temp-sistema` colidem** entre Debloat e WinFaxina (mesmos Ids, mesmas
-  pastas). Descartar as versões do Debloat (`Clear-TempPath`, só conta itens); manter as
-  do WinFaxina (`Clear-PastaComRelatorio`, mede bytes antes/depois — cumpre a regra do
-  projeto de nunca reportar OK sem medir efeito real). Categoria `Limpeza` do Debloat
-  colapsa dentro de `Temporarios` do WinFaxina — **7 categorias no total**: Apps,
-  Telemetria, Desempenho, Temporarios, Navegadores, Sistema, Lixeira.
-- **`cdm` vira dois itens** (`cdm-w10`/`cdm-w11`): o nome do valor de registro difere de
+- **`Debloat` NUNCA teve categoria `Sistema`** — confirmado direto no código-fonte dos
+  dois scripts originais (`$script:Categorias = @('Apps', 'Telemetria', 'Desempenho',
+  'Limpeza')` nos dois, sem exceção). `Sistema` é 100% origem WinFaxina. **Bug real
+  cometido e corrigido na própria Fase 3**: `$script:CategoriasPorModo['Debloat']` tinha
+  sido definido na Fase 1 como `@('Apps', 'Telemetria', 'Desempenho', 'Sistema')` — por
+  suposição, antes de qualquer código do Debloat ter sido lido. Isso teria feito
+  `-Modo Debloat` também rodar a faxina de disco do WinFaxina (DISM/patch-cache/spooler)
+  sem pedir. Corrigido para `@('Apps', 'Telemetria', 'Desempenho')` antes do push desta
+  fase. **Nunca reintroduzir `Sistema` em `CategoriasPorModo['Debloat']`** sem antes
+  verificar que existe um item de catálogo de origem Debloat de verdade nessa categoria.
+- **`temp-usuario`/`temp-sistema` colidiam** entre Debloat e WinFaxina (mesmos Ids, mesmas
+  pastas). Descartadas as versões do Debloat (`Clear-TempPath`, só contava itens);
+  mantidas as do WinFaxina (`Clear-PastaComRelatorio`, mede bytes antes/depois). Categoria
+  `Limpeza` do Debloat colapsou dentro de `Temporarios` do WinFaxina — **7 categorias no
+  total**: Apps, Telemetria, Desempenho, Temporarios, Navegadores, Sistema, Lixeira.
+- **`cdm` virou dois itens** (`cdm-w10`/`cdm-w11`): o nome do valor de registro difere de
   verdade entre W10 (`SubscribedContent-310093Enabled`) e W11
-  (`SubscribedContent-353696Enabled`) — não dá para fundir num item só.
-- **`bing-iniciar`/`widgets-botao` viram um item só cada**: os `Valores` são idênticos
-  entre W10 e W11 (só a `Descricao` tinha drift de cópia entre os dois repos) — usar a
-  `Descricao` mais precisa (a de `widgets-botao` do W10, "(se presente)").
+  (`SubscribedContent-353696Enabled`) — os outros 9 valores são idênticos e ficam
+  duplicados nos dois itens de propósito (`SistemasAlvo` garante que só o certo aparece).
+- **`bing-iniciar`/`widgets-botao` viraram um item só cada**: os `Valores` eram idênticos
+  entre W10 e W11 (só a `Descricao` tinha drift de cópia entre os dois repos) — usada a
+  `Descricao` mais precisa de cada (a do W10 nos dois casos: "fora da BUSCA do menu
+  Iniciar" é mais exata pro que `DisableSearchBoxSuggestions` faz; "(se presente)" no
+  Widgets é mais correto, já que a presença do botão varia em ambas as versões).
+- **`extensoes-arquivo` era idêntico byte a byte** nos dois scripts-fonte — nenhuma
+  decisão a tomar, só um item.
+- **Todo o resto de Apps/Telemetria/Desempenho que existe em só um dos dois scripts
+  ganhou `SistemasAlvo` correspondente** (16 exclusivos de Win10, 15 exclusivos de Win11,
+  mais `cortana-politica`=Win10 e `copilot-politica`/`recall`=Win11 em Telemetria, e 5
+  serviços exclusivos de Win10 + `menu-contexto` exclusivo de Win11 em Desempenho) — a
+  curadoria de CADA script original foi tratada como autoritativa pro seu próprio SO, sem
+  tentar adivinhar se um item Win10-only também funcionaria no Win11 (ou vice-versa).
 - **`SistemasAlvo`**: campo opcional (`@('Win10')` | `@('Win11')` | ausente = os dois).
-  **Nunca array vazio** — testar a distinção null-vs-vazio explicitamente. Mesma classe de
-  bug que já mordeu este projeto (StartupAppsNinja: `Test-BuildValidado` precisou parar de
-  ser `[Parameter(Mandatory)]` porque `@()` explícito quebra o binding obrigatório).
+  **Nunca array vazio** — testado explicitamente. Mesma classe de bug que já mordeu este
+  projeto (StartupAppsNinja: `Test-BuildValidado` precisou parar de ser
+  `[Parameter(Mandatory)]` porque `@()` explícito quebra o binding obrigatório). Filtrado
+  por `Test-ItemAplicavelAoSO` (função própria — reusada em `Get-ItensDoPerfil`/
+  `Get-ContagemCategoria`/`Show-CategoryMenu`, não copiada 3x).
 - **O literal do catálogo nunca lê nada calculado em runtime** (nem
   `$script:VersaoWindowsDetectada`, nem `$env:*` direto dentro de `Join-Path`/cmdlets) — os
   testes Pester extraem o literal via AST e avaliam isolado, sem rodar o resto do script
   nem detectar SO real. Regra herdada do WinFaxina: usar interpolação de string
   (`"$env:SystemRoot\X"`), nunca `Join-Path $env:SystemRoot 'X'` dentro do literal.
-- Ao portar `Invoke-FaxinaItem`/`Get-AcaoDescricao` (ou seus equivalentes fundidos): todo
-  item `Tipo=Especial` precisa de um `case` nos DOIS dispatchers (execução real E
-  descrição sob `-Simular`) — bug real já corrigido uma vez no WinFaxina
-  (`Get-AcaoDescricao` sem case para `FilaImpressao`; o teste mecânico só cobria o
-  dispatcher de execução). Portar a versão já alargada do teste, cobrindo os dois.
+- `Invoke-ItemCatalogo`/`Get-AcaoDescricao` ganharam um segundo nível de guarda mecânica
+  na Fase 3: além do `case` por `Alvo` dentro de `Especial` (já existia), agora também
+  testa que todo `Tipo` usado no catálogo (`Appx`/`Servico`/`Registro`/`TarefaAgendada`/
+  `LimpezaPasta`/`Especial`) tem um `case` no switch de nível superior nos DOIS
+  dispatchers — pega o erro de esquecer um Tipo inteiro, não só um Alvo dentro de
+  Especial.
+- `Invoke-Selecao` (motor compartilhado) ganhou a chamada a `Get-InventarioAppx` (uma vez
+  antes do loop, só se a seleção tiver algum item `Tipo=Appx` e não estiver em
+  `-Simular`) — fica no motor, não em cada `-Modo` chamador, pra nenhum modo futuro com
+  itens Appx esquecer de preparar isso.
 
 ## Decisões de fusão de funções compartilhadas
 
@@ -111,12 +138,12 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
   um gap real aqui (só checava o build, passaria hoje num Windows Server com build na
   faixa 10240-21999). Já corrigido e coberto por teste de fixture (incluindo o caso
   Server-com-build-de-Win10/11, que é a regressão específica desse gap).
-- Mensagem de "reinicie o PC" (herdada do Debloat) deve ficar condicional a pelo menos um
-  item `Appx`/`Servico`/`Registro`/`TarefaAgendada` ter sido executado — pendente para a
-  Fase 3, não incondicional como no Debloat original.
-- `Test-UsuarioDivergente` (aviso de sessão elevada como usuário diferente do interativo)
-  hoje só existe no Debloat, mas o risco vale igual para WinFaxina — promover para rodar
-  incondicionalmente no fluxo fundido (Fase 2/3).
+- Mensagem de "reinicie o PC" (herdada do Debloat, era incondicional lá): **feito na Fase
+  3** — só aparece se pelo menos um item `Appx`/`Servico`/`Registro`/`TarefaAgendada` com
+  `Status` `Ok`/`Parcial` foi executado (uma sessão só-de-limpeza não pede reinício à toa).
+- `Test-UsuarioDivergente` (aviso de sessão elevada como usuário diferente do interativo):
+  **feito na Fase 3** — promovida pra rodar em qualquer `-Modo` do Grupo A
+  (`Debloat`/`Faxina`/`Tudo`), não só quando era originalmente do Debloat.
 - Menu de categorias: usar `'^\d{1,2}$'` (não `'^\d$'`) — com Limpeza colapsada em
   Temporarios ficam 7 categorias (cabe em 1 dígito), mas sem folga para uma 8ª.
 
@@ -145,9 +172,15 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
    tipos do Debloat, não cria um novo). `$script:CategoriasPorModo` já existe com as
    3 chaves (`Faxina`/`Debloat`/`Tudo`) — Fase 3 só precisa preencher o catálogo, não
    mexer no mecanismo de filtro.
-3. Fundir Debloat10+Debloat11 no catálogo (ver seção acima); ligar `-Modo Debloat`/`Tudo`.
+3. ~~Fundir Debloat10+Debloat11 no catálogo (ver seção acima); ligar `-Modo Debloat`/
+   `Tudo`~~ — **feito**. 66 itens novos, `SistemasAlvo`/`Test-ItemAplicavelAoSO` novos no
+   motor, guarda de dispatcher por Tipo alargada, CI com execução real de `-Modo Debloat`.
 4. Portar Grupo B do mais seguro ao mais arriscado: Diagnostico → AdminOculto → SafeBoot →
-   Inicializacao (o maior, mais crítico em segurança, por último).
+   Inicializacao (o maior, mais crítico em segurança, por último). Todas as 6 extrações
+   verbatim dos scripts-fonte (Fase 3 usou as 2 do Debloat; as 4 do Grupo B —
+   DiagnosticoRapidoDePC, ativar-win-admin, SafeBoot-Ninja, StartupAppsNinja — já foram
+   feitas em paralelo e estão disponíveis no histórico da conversa, não precisam ser
+   refeitas ao iniciar esta fase).
 5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
    etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
    manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`

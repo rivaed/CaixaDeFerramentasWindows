@@ -406,6 +406,196 @@ $script:Catalogo = @(
     [pscustomobject]@{ Id = 'fila-impressao';  Categoria = 'Sistema'; Tipo = 'Especial'; Alvo = 'FilaImpressao';      Descricao = 'Destravar fila de impressao presa (reinicia o Spooler)';  Nivel = 'Seguro' }
 
     [pscustomobject]@{ Id = 'lixeira'; Categoria = 'Lixeira'; Tipo = 'Especial'; Alvo = 'RecycleBin'; Descricao = 'Esvaziar a Lixeira (irreversivel)'; Nivel = 'Opcional' }
+
+    # ===== Fase 3: Debloat (fundido de Windows10-Debloat + Windows11-Debloat) =====
+    # temp-usuario/temp-sistema do Debloat foram DESCARTADOS de proposito (colidiam
+    # com os dois itens do WinFaxina acima) - ver CLAUDE.md, Bloqueio A.
+
+    # --- Apps: identicos byte a byte nos dois scripts-fonte, sem SistemasAlvo ---
+    [pscustomobject]@{ Id = 'bing-news';    Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.BingNews';                    Descricao = 'Noticias (Bing News)';           Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'bing-weather'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.BingWeather';                 Descricao = 'Clima (Bing Weather)';           Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'get-help';     Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.GetHelp';                     Descricao = 'Obter Ajuda';                    Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'solitaire';    Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.MicrosoftSolitaireCollection'; Descricao = 'Solitaire Collection';          Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'people';       Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.People';                      Descricao = 'Pessoas';                        Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'media-player'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.ZuneMusic';                   Descricao = 'Media Player (musica)';          Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'filmes-tv';    Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.ZuneVideo';                   Descricao = 'Filmes e TV';                    Nivel = 'Seguro' }
+    [pscustomobject]@{ Id = 'xbox-overlay'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.XboxGameOverlay';             Descricao = 'Xbox Game Overlay';              Nivel = 'Opcional' }
+    [pscustomobject]@{ Id = 'xbox-gamebar'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.XboxGamingOverlay';           Descricao = 'Xbox Game Bar';                  Nivel = 'Opcional' }
+    [pscustomobject]@{ Id = 'xbox-speech';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.XboxSpeechToTextOverlay';     Descricao = 'Xbox Speech-to-Text';            Nivel = 'Opcional' }
+    [pscustomobject]@{ Id = 'store-purchase'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.StorePurchaseApp';         Descricao = 'Compras da Microsoft Store';      Nivel = 'Agressivo' }
+    [pscustomobject]@{ Id = 'xbox-identity';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.XboxIdentityProvider';     Descricao = 'Login Xbox (Minecraft/Game Pass)'; Nivel = 'Agressivo' }
+    [pscustomobject]@{ Id = 'xbox-tcui';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Xbox.TCUI';                Descricao = 'Xbox TCUI (UI de conta Xbox)';    Nivel = 'Agressivo' }
+    [pscustomobject]@{ Id = 'widgets-pacote'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MicrosoftWindows.Client.WebExperience'; Descricao = 'Widgets (remocao do pacote)';  Nivel = 'Agressivo' }
+    [pscustomobject]@{ Id = 'onedrive';       Categoria = 'Apps'; Tipo = 'Especial'; Alvo = 'OneDrive';                       Descricao = 'OneDrive (desinstalacao)';        Nivel = 'Agressivo' }
+
+    # --- Apps: exclusivos do Windows10-Debloat ---
+    [pscustomobject]@{ Id = 'getstarted';   Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Getstarted';           Descricao = 'Dicas (Get Started)';   Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'alarmes';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.WindowsAlarms';        Descricao = 'Alarmes e Relogio';     Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'gravador-som'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.WindowsSoundRecorder'; Descricao = 'Gravador de Som';       Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'mapas';        Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.WindowsMaps';         Descricao = 'Mapas';                 Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'feedback-hub'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.WindowsFeedbackHub';  Descricao = 'Hub de Comentarios';    Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'office-lens';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Office.Lens';         Descricao = 'Office Lens';           Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'network-speed'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.NetworkSpeedTest';   Descricao = 'Teste de Velocidade de Rede'; Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'print3d';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Print3D';             Descricao = 'Print 3D';              Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'teams-chat';   Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MicrosoftTeams';                Descricao = 'Teams (Chat, barra de tarefas — versao W10)'; Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'cortana';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.549981C3F5F10';       Descricao = 'Cortana (descontinuada)'; Nivel = 'Seguro'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'sticky-notes'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.MicrosoftStickyNotes'; Descricao = 'Notas Adesivas';        Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'camera';       Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.WindowsCamera';       Descricao = 'Camera';                Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'mail-calendario'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'microsoft.windowscommunicationsapps'; Descricao = 'Email e Calendario (Mail)'; Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'onenote-app';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Office.OneNote';      Descricao = 'OneNote (app da Store)'; Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'mixed-reality'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.MixedReality.Portal'; Descricao = 'Mixed Reality Portal (sem suporte apos 01/11/2026)'; Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'xbox-app';     Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.XboxApp';             Descricao = 'Xbox (app antigo)';     Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+
+    # --- Apps: exclusivos do Windows11-Debloat ---
+    [pscustomobject]@{ Id = 'bing-search';   Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.BingSearch';                     Descricao = 'Bing Search (24H2)';       Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'office-hub';    Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.MicrosoftOfficeHub';              Descricao = 'Microsoft 365 (Office Hub)'; Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'todos';         Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Todos';                          Descricao = 'Microsoft To Do';          Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'clipchamp';     Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Clipchamp.Clipchamp';                      Descricao = 'Clipchamp (editor de video)'; Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'teams';         Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MSTeams';                                  Descricao = 'Microsoft Teams (pessoal)'; Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'outlook-novo';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.OutlookForWindows';              Descricao = 'Novo Outlook';             Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'power-automate'; Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.PowerAutomateDesktop';          Descricao = 'Power Automate';           Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'family';        Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MicrosoftCorporationII.MicrosoftFamily';   Descricao = 'Microsoft Family';         Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'linkedin';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = '7EE7776C.LinkedInforWindows';              Descricao = 'LinkedIn';                 Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'dev-home';      Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Windows.DevHome';                Descricao = 'Dev Home (descontinuado)'; Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'copilot-app';   Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.Copilot';                        Descricao = 'Copilot (app)';            Nivel = 'Seguro'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'xbox-gaming';   Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.GamingApp';                      Descricao = 'Xbox (app atual)';         Nivel = 'Opcional'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'phone-link';    Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'Microsoft.YourPhone';                      Descricao = 'Phone Link (celular vinculado)'; Nivel = 'Opcional'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'cross-device';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MicrosoftWindows.CrossDevice';             Descricao = 'Cross Device (par do Phone Link)'; Nivel = 'Opcional'; SistemasAlvo = @('Win11') }
+    [pscustomobject]@{ Id = 'quick-assist';  Categoria = 'Apps'; Tipo = 'Appx'; Alvo = 'MicrosoftCorporationII.QuickAssist';       Descricao = 'Assistencia Rapida';       Nivel = 'Opcional'; SistemasAlvo = @('Win11') }
+
+    # --- Telemetria: identicos nos dois scripts-fonte, sem SistemasAlvo ---
+    [pscustomobject]@{ Id = 'diagtrack'; Categoria = 'Telemetria'; Tipo = 'Servico'; Alvo = 'DiagTrack'; Descricao = 'Servico de telemetria (DiagTrack)'; Nivel = 'Seguro' }
+    [pscustomobject]@{
+        Id = 'telemetria-registro'; Categoria = 'Telemetria'; Tipo = 'Registro'
+        Descricao = 'Telemetria no minimo (politica de registro)'; Nivel = 'Seguro'
+        Valores = @(
+            # AllowTelemetry=1 (Basico): 0 so e honrado em Enterprise/Education/IoT Enterprise.
+            @{ Caminho = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Nome = 'AllowTelemetry';                 Valor = 1; Tipo = 'DWord' }
+            @{ Caminho = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Nome = 'DoNotShowFeedbackNotifications'; Valor = 1; Tipo = 'DWord' }
+            @{ Caminho = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Nome = 'LimitDiagnosticLogCollection';   Valor = 1; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{
+        Id = 'tarefas-telemetria'; Categoria = 'Telemetria'; Tipo = 'TarefaAgendada'
+        Descricao = 'Tarefas agendadas de telemetria (CEIP)'; Nivel = 'Seguro'
+        Alvos = @(
+            @{ Caminho = '\Microsoft\Windows\Application Experience\';                   Nome = 'Microsoft Compatibility Appraiser' }
+            @{ Caminho = '\Microsoft\Windows\Application Experience\';                   Nome = 'ProgramDataUpdater' }
+            @{ Caminho = '\Microsoft\Windows\Customer Experience Improvement Program\';  Nome = 'Consolidator' }
+            @{ Caminho = '\Microsoft\Windows\Customer Experience Improvement Program\';  Nome = 'UsbCeip' }
+            @{ Caminho = '\Microsoft\Windows\Autochk\';                                  Nome = 'Proxy' }
+            @{ Caminho = '\Microsoft\Windows\DiskDiagnostic\';                           Nome = 'Microsoft-Windows-DiskDiagnosticDataCollector' }
+        )
+    }
+    [pscustomobject]@{
+        Id = 'advertising-id'; Categoria = 'Telemetria'; Tipo = 'Registro'
+        Descricao = 'ID de publicidade (anuncios personalizados)'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Nome = 'Enabled'; Valor = 0; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{
+        # Valores identicos nos dois scripts-fonte; Descricao mais precisa (a do W10,
+        # que fala especificamente da CAIXA DE BUSCA, que e o que DisableSearchBoxSuggestions
+        # de fato controla) venceu o drift de copia entre os dois repos.
+        Id = 'bing-iniciar'; Categoria = 'Telemetria'; Tipo = 'Registro'
+        Descricao = 'Bing/sugestoes web fora da busca do menu Iniciar'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'; Nome = 'DisableSearchBoxSuggestions'; Valor = 1; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{ Id = 'dmwappush'; Categoria = 'Telemetria'; Tipo = 'Servico'; Alvo = 'dmwappushservice'; Descricao = 'WAP Push (quebra MDM/Intune)'; Nivel = 'Opcional' }
+
+    # --- Telemetria: cdm dividido em dois itens - o NOME do valor de registro
+    # difere de verdade entre W10 e W11 (nao e so drift de copia); os outros 9
+    # valores sao identicos nos dois e ficam duplicados nos dois itens de proposito
+    # (SistemasAlvo garante que so o correto para o SO detectado e oferecido).
+    [pscustomobject]@{
+        Id = 'cdm-w10'; Categoria = 'Telemetria'; Tipo = 'Registro'; SistemasAlvo = @('Win10')
+        Descricao = 'Apps promovidos/sugestoes (Content Delivery) — Windows 10'; Nivel = 'Seguro'
+        Valores = @(
+            # Sem isso, o Windows reinstala apps promovidos e o debloat "se desfaz" sozinho.
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'ContentDeliveryAllowed';           Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SilentInstalledAppsEnabled';       Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'OemPreInstalledAppsEnabled';       Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'PreInstalledAppsEnabled';          Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SystemPaneSuggestionsEnabled';     Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'RotatingLockScreenOverlayEnabled'; Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-338388Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-338389Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-353694Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-310093Enabled';  Valor = 0; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{
+        Id = 'cdm-w11'; Categoria = 'Telemetria'; Tipo = 'Registro'; SistemasAlvo = @('Win11')
+        Descricao = 'Apps promovidos/sugestoes (Content Delivery) — Windows 11'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'ContentDeliveryAllowed';           Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SilentInstalledAppsEnabled';       Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'OemPreInstalledAppsEnabled';       Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'PreInstalledAppsEnabled';          Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SystemPaneSuggestionsEnabled';     Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'RotatingLockScreenOverlayEnabled'; Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-338388Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-338389Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-353694Enabled';  Valor = 0; Tipo = 'DWord' }
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Nome = 'SubscribedContent-353696Enabled';  Valor = 0; Tipo = 'DWord' }
+        )
+    }
+
+    # --- Telemetria: exclusivos de um dos dois scripts-fonte ---
+    [pscustomobject]@{
+        Id = 'cortana-politica'; Categoria = 'Telemetria'; Tipo = 'Registro'; SistemasAlvo = @('Win10')
+        Descricao = 'Politica: desativar Cortana na busca'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'; Nome = 'AllowCortana'; Valor = 0; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{
+        Id = 'copilot-politica'; Categoria = 'Telemetria'; Tipo = 'Registro'; SistemasAlvo = @('Win11')
+        Descricao = 'Politica: desativar integracao Copilot'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot'; Nome = 'TurnOffWindowsCopilot'; Valor = 1; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{ Id = 'recall'; Categoria = 'Telemetria'; Tipo = 'Especial'; Alvo = 'Recall'; Descricao = 'Recall (snapshots de tela, Copilot+)'; Nivel = 'Opcional'; SistemasAlvo = @('Win11') }
+
+    # --- Desempenho: identicos nos dois scripts-fonte, sem SistemasAlvo ---
+    [pscustomobject]@{ Id = 'efeitos-visuais'; Categoria = 'Desempenho'; Tipo = 'Especial'; Alvo = 'EfeitosVisuais'; Descricao = 'Efeitos visuais: melhor desempenho'; Nivel = 'Seguro' }
+    [pscustomobject]@{
+        # Descricao com "(se presente)" (a do W10) venceu — a presenca do botao
+        # Widgets varia por atualizacao em AMBAS as versoes, nao so na 11.
+        Id = 'widgets-botao'; Categoria = 'Desempenho'; Tipo = 'Registro'
+        Descricao = 'Ocultar botao de Widgets da barra (se presente)'; Nivel = 'Seguro'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Nome = 'TaskbarDa'; Valor = 0; Tipo = 'DWord' }
+        )
+    }
+    [pscustomobject]@{
+        Id = 'extensoes-arquivo'; Categoria = 'Desempenho'; Tipo = 'Registro'
+        Descricao = 'Mostrar extensoes de arquivo'; Nivel = 'Opcional'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Nome = 'HideFileExt'; Valor = 0; Tipo = 'DWord' }
+        )
+    }
+
+    # --- Desempenho: exclusivos do Windows10-Debloat ---
+    [pscustomobject]@{ Id = 'fax';          Categoria = 'Desempenho'; Tipo = 'Servico'; Alvo = 'Fax';           Descricao = 'Servico de Fax e Digitalizacao'; Nivel = 'Seguro';   SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'wsearch';      Categoria = 'Desempenho'; Tipo = 'Servico'; Alvo = 'WSearch';       Descricao = 'Indexacao de busca (Windows Search)'; Nivel = 'Opcional'; SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'sysmain';      Categoria = 'Desempenho'; Tipo = 'Servico'; Alvo = 'SysMain';       Descricao = 'Superfetch/Prefetch (SysMain)'; Nivel = 'Opcional';  SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'xbl-gamesave'; Categoria = 'Desempenho'; Tipo = 'Servico'; Alvo = 'XblGameSave';   Descricao = 'Xbox Live Game Save'; Nivel = 'Opcional';             SistemasAlvo = @('Win10') }
+    [pscustomobject]@{ Id = 'xbox-netapi';  Categoria = 'Desempenho'; Tipo = 'Servico'; Alvo = 'XboxNetApiSvc'; Descricao = 'Xbox Live Networking Service'; Nivel = 'Opcional';    SistemasAlvo = @('Win10') }
+
+    # --- Desempenho: exclusivo do Windows11-Debloat (menu de contexto classico so
+    # existe pra reverter porque so o W11 mudou essa UX; W10 nao tem o que reverter) ---
+    [pscustomobject]@{
+        Id = 'menu-contexto'; Categoria = 'Desempenho'; Tipo = 'Registro'; SistemasAlvo = @('Win11')
+        Descricao = 'Menu de contexto classico (muda a UX padrao)'; Nivel = 'Agressivo'
+        Valores = @(
+            @{ Caminho = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'; Nome = '(default)'; Valor = ''; Tipo = 'String' }
+        )
+    }
 )
 
 # Ordem canonica das 7 categorias do esquema fundido (ver CLAUDE.md). Usada para
@@ -413,14 +603,31 @@ $script:Catalogo = @(
 # menu/participa da selecao por perfil e sempre a filtrada por -Modo, abaixo.
 $script:Categorias = @('Apps', 'Telemetria', 'Desempenho', 'Temporarios', 'Navegadores', 'Sistema', 'Lixeira')
 
-# "Um motor so; Modo so pre-filtra Categorias" (decisao do plano). Apps/Telemetria/
-# Desempenho ainda nao tem nenhum item no catalogo (chegam na Fase 3) - declarar o
-# mapeamento agora nao antecipa a implementacao do Debloat, so a taxonomia ja
-# decidida, e evita reabrir este ponto quando a Fase 3 chegar.
+# "Um motor so; Modo so pre-filtra Categorias" (decisao do plano).
+# Sistema fica exclusivo de Faxina - confirmado direto no codigo-fonte (Fase 3) que
+# nem Windows10-Debloat nem Windows11-Debloat jamais tiveram uma categoria "Sistema"
+# (so Apps|Telemetria|Desempenho|Limpeza); a versao anterior desta lista incluia
+# 'Sistema' aqui por suposicao, antes de ler os scripts-fonte - isso teria feito
+# -Modo Debloat tambem rodar DISM/patch-cache/spooler do WinFaxina, que nao e o
+# esperado (quem quer isso usa -Modo Faxina ou -Modo Tudo).
 $script:CategoriasPorModo = @{
     Faxina  = @('Temporarios', 'Navegadores', 'Sistema', 'Lixeira')
-    Debloat = @('Apps', 'Telemetria', 'Desempenho', 'Sistema')
+    Debloat = @('Apps', 'Telemetria', 'Desempenho')
     Tudo    = $script:Categorias
+}
+
+function Test-ItemAplicavelAoSO {
+    # SistemasAlvo ausente/$null = item vale para qualquer SO (WinFaxina inteiro e a
+    # maior parte do Debloat fundido). Quando presente, o item so vale se o SO
+    # detectado estiver na lista - NUNCA array vazio (ver Catalogo.Tests.ps1).
+    # Fica em funcao propria (nao inline no Where-Object) porque e repetida em 4
+    # lugares (Get-ItensDoPerfil, Get-ContagemCategoria, Show-CategoryMenu e aqui
+    # mesmo) - um so ponto pra essa regra, nao 4 copias do mesmo -or.
+    param(
+        [Parameter(Mandatory)]$Item,
+        [Parameter(Mandatory)][string]$VersaoWindows
+    )
+    -not $Item.SistemasAlvo -or $Item.SistemasAlvo -contains $VersaoWindows
 }
 
 function Get-ItensDoPerfil {
@@ -428,14 +635,19 @@ function Get-ItensDoPerfil {
         [Parameter(Mandatory)]
         [ValidateSet('Minimo', 'Completo', 'Agressivo')]
         [string]$NomePerfil,
-        [Parameter(Mandatory)][string[]]$Categorias
+        [Parameter(Mandatory)][string[]]$Categorias,
+        [Parameter(Mandatory)][string]$VersaoWindows
     )
     $niveis = switch ($NomePerfil) {
         'Minimo'    { @('Seguro') }
         'Completo'  { @('Seguro', 'Opcional') }
         'Agressivo' { @('Seguro', 'Opcional', 'Agressivo') }
     }
-    $script:Catalogo | Where-Object { $niveis -contains $_.Nivel -and $Categorias -contains $_.Categoria }
+    $script:Catalogo | Where-Object {
+        $niveis -contains $_.Nivel -and
+        $Categorias -contains $_.Categoria -and
+        (Test-ItemAplicavelAoSO -Item $_ -VersaoWindows $VersaoWindows)
+    }
 }
 
 #endregion
@@ -670,10 +882,288 @@ function Clear-Lixeira {
     }
 }
 
+function Get-InventarioAppx {
+    Write-Log 'Inventariando pacotes instalados e provisionados (pode levar alguns segundos)...' 'Info'
+    # Enumeracoes feitas UMA vez (Get-AppxProvisionedPackage e uma operacao DISM lenta).
+    $script:PacotesInstalados = @(Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue)
+    $script:PacotesProvisionados = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue)
+}
+
+function Remove-BloatApp {
+    param([Parameter(Mandatory)]$Item)
+
+    # Matching EXATO por nome de pacote (curingas removiam pacotes alem do pretendido).
+    $provisionados = @($script:PacotesProvisionados | Where-Object { $_.DisplayName -eq $Item.Alvo })
+    $instalados = @($script:PacotesInstalados | Where-Object { $_.Name -eq $Item.Alvo })
+
+    if ($provisionados.Count -eq 0 -and $instalados.Count -eq 0) {
+        return @{ Status = 'NaoEncontrado'; Detalhe = ('pacote "{0}" nao esta presente' -f $Item.Alvo) }
+    }
+
+    $okProv = 0; $okInst = 0
+    $falhas = @()
+
+    # Desprovisiona PRIMEIRO: se so a remocao por usuario falhar, o app nao volta
+    # para novas contas criadas na maquina.
+    foreach ($pacote in $provisionados) {
+        try {
+            Remove-AppxProvisionedPackage -Online -PackageName $pacote.PackageName -ErrorAction Stop | Out-Null
+            $okProv++
+        }
+        catch {
+            $falhas += ('desprovisionar {0}: {1}' -f $pacote.PackageName, $_.Exception.Message)
+        }
+    }
+    foreach ($pacote in $instalados) {
+        try {
+            Remove-AppxPackage -Package $pacote.PackageFullName -AllUsers -ErrorAction Stop
+            $okInst++
+        }
+        catch {
+            $falhas += ('remover {0}: {1}' -f $pacote.PackageFullName, $_.Exception.Message)
+        }
+    }
+
+    $partes = @()
+    if ($okInst -gt 0) { $partes += ('{0} instalado(s) removido(s)' -f $okInst) }
+    if ($okProv -gt 0) { $partes += ('{0} provisionado(s) removido(s)' -f $okProv) }
+    $resumo = $partes -join ', '
+
+    if ($falhas.Count -eq 0) {
+        return @{ Status = 'Ok'; Detalhe = $resumo }
+    }
+    if ($okInst -gt 0 -or $okProv -gt 0) {
+        return @{ Status = 'Parcial'; Detalhe = ('{0}; falhas: {1}' -f $resumo, ($falhas -join ' | ')) }
+    }
+    return @{ Status = 'Falha'; Detalhe = ($falhas -join ' | ') }
+}
+
+function Disable-BloatService {
+    param([Parameter(Mandatory)]$Item)
+
+    $servico = Get-Service -Name $Item.Alvo -ErrorAction SilentlyContinue
+    if (-not $servico) {
+        return @{ Status = 'NaoEncontrado'; Detalhe = ('servico "{0}" nao existe neste sistema' -f $Item.Alvo) }
+    }
+    try {
+        Stop-Service -Name $Item.Alvo -Force -ErrorAction SilentlyContinue
+        Set-Service -Name $Item.Alvo -StartupType Disabled -ErrorAction Stop
+        return @{ Status = 'Ok'; Detalhe = 'parado e desativado' }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = ('nao foi possivel desativar (servico protegido ou acesso negado): {0}' -f $_.Exception.Message) }
+    }
+}
+
+function Set-RegistryTweak {
+    param([Parameter(Mandatory)]$Item)
+
+    $ok = 0
+    $falhas = @()
+    foreach ($valor in $Item.Valores) {
+        try {
+            if (-not (Test-Path -Path $valor.Caminho)) {
+                New-Item -Path $valor.Caminho -Force -ErrorAction Stop | Out-Null
+            }
+            Set-ItemProperty -Path $valor.Caminho -Name $valor.Nome -Value $valor.Valor -Type $valor.Tipo -ErrorAction Stop
+            $ok++
+        }
+        catch {
+            $falhas += ('{0}\{1}: {2}' -f $valor.Caminho, $valor.Nome, $_.Exception.Message)
+        }
+    }
+
+    if ($falhas.Count -eq 0) {
+        return @{ Status = 'Ok'; Detalhe = ('{0} valor(es) de registro aplicado(s)' -f $ok) }
+    }
+    if ($ok -gt 0) {
+        return @{ Status = 'Parcial'; Detalhe = ('{0} aplicado(s); falhas: {1}' -f $ok, ($falhas -join ' | ')) }
+    }
+    return @{ Status = 'Falha'; Detalhe = ($falhas -join ' | ') }
+}
+
+function Disable-BloatScheduledTask {
+    param([Parameter(Mandatory)]$Item)
+
+    $ok = 0; $ausentes = 0
+    $falhas = @()
+    foreach ($alvo in $Item.Alvos) {
+        $tarefa = Get-ScheduledTask -TaskPath $alvo.Caminho -TaskName $alvo.Nome -ErrorAction SilentlyContinue
+        if (-not $tarefa) {
+            $ausentes++
+            continue
+        }
+        try {
+            $tarefa | Disable-ScheduledTask -ErrorAction Stop | Out-Null
+            $ok++
+        }
+        catch {
+            $falhas += ('{0}{1}: {2}' -f $alvo.Caminho, $alvo.Nome, $_.Exception.Message)
+        }
+    }
+
+    $resumo = ('{0} desativada(s), {1} inexistente(s) neste build' -f $ok, $ausentes)
+    if ($falhas.Count -eq 0) {
+        if ($ok -eq 0 -and $ausentes -gt 0) {
+            return @{ Status = 'NaoEncontrado'; Detalhe = $resumo }
+        }
+        return @{ Status = 'Ok'; Detalhe = $resumo }
+    }
+    if ($ok -gt 0) {
+        return @{ Status = 'Parcial'; Detalhe = ('{0}; falhas: {1}' -f $resumo, ($falhas -join ' | ')) }
+    }
+    return @{ Status = 'Falha'; Detalhe = ($falhas -join ' | ') }
+}
+
+function Invoke-BroadcastSettingChange {
+    # Notifica o sistema (WM_SETTINGCHANGE) para aplicar ajustes de aparencia sem reiniciar.
+    if (-not ('Win32.NativeMethods' -as [type])) {
+        Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @'
+[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+'@
+    }
+    $resultado = [UIntPtr]::Zero
+    # HWND_BROADCAST = 0xffff, WM_SETTINGCHANGE = 0x001A, SMTO_ABORTIFHUNG = 0x0002
+    [void][Win32.NativeMethods]::SendMessageTimeout([IntPtr]0xffff, 0x001A, [UIntPtr]::Zero, 'WindowMetrics', 0x0002, 5000, [ref]$resultado)
+    [void][Win32.NativeMethods]::SendMessageTimeout([IntPtr]0xffff, 0x001A, [UIntPtr]::Zero, $null, 0x0002, 5000, [ref]$resultado)
+}
+
+function Set-VisualEffectsPerformance {
+    # Aplica de fato o perfil de desempenho: VisualFXSetting sozinho so muda o botao
+    # de radio do dialogo "Opcoes de Desempenho", sem alterar nenhum efeito real.
+    try {
+        $fx = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'
+        if (-not (Test-Path $fx)) { New-Item -Path $fx -Force | Out-Null }
+        # 3 = Personalizado: melhor desempenho mantendo a suavizacao de fontes (legibilidade).
+        Set-ItemProperty -Path $fx -Name 'VisualFXSetting' -Value 3 -Type DWord -ErrorAction Stop
+
+        # Mascara de "melhor desempenho" com o bit de suavizacao de fontes ligado (byte 5 = 0x12).
+        $mascara = [byte[]](0x90, 0x12, 0x03, 0x80, 0x12, 0x00, 0x00, 0x00)
+        Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'UserPreferencesMask' -Value $mascara -Type Binary -ErrorAction Stop
+        Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'DragFullWindows' -Value '0' -Type String -ErrorAction Stop
+        Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'FontSmoothing' -Value '2' -Type String -ErrorAction Stop
+        Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop\WindowMetrics' -Name 'MinAnimate' -Value '0' -Type String -ErrorAction Stop
+
+        $avancado = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+        Set-ItemProperty -Path $avancado -Name 'TaskbarAnimations' -Value 0 -Type DWord -ErrorAction Stop
+        Set-ItemProperty -Path $avancado -Name 'ListviewAlphaSelect' -Value 0 -Type DWord -ErrorAction Stop
+        Set-ItemProperty -Path $avancado -Name 'ListviewShadow' -Value 0 -Type DWord -ErrorAction Stop
+
+        $dwm = 'HKCU:\Software\Microsoft\Windows\DWM'
+        if (-not (Test-Path $dwm)) { New-Item -Path $dwm -Force | Out-Null }
+        Set-ItemProperty -Path $dwm -Name 'EnableAeroPeek' -Value 0 -Type DWord -ErrorAction Stop
+
+        Invoke-BroadcastSettingChange
+        return @{ Status = 'Ok'; Detalhe = 'perfil de desempenho aplicado (efeito completo no proximo logon)' }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = $_.Exception.Message }
+    }
+}
+
+function Remove-OneDriveApp {
+    # OneDrive nao e Appx: usa o desinstalador nativo.
+    Stop-Process -Name 'OneDrive' -Force -ErrorAction SilentlyContinue
+
+    $candidatos = @(
+        (Join-Path $env:SystemRoot 'SysWOW64\OneDriveSetup.exe')
+        (Join-Path $env:SystemRoot 'System32\OneDriveSetup.exe')
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\OneDrive\Update\OneDriveSetup.exe')
+    )
+    $instaladorMaquina = Join-Path $env:ProgramFiles 'Microsoft OneDrive'
+    if (Test-Path $instaladorMaquina) {
+        $achado = Get-ChildItem -Path $instaladorMaquina -Filter 'OneDriveSetup.exe' -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($achado) { $candidatos = @($achado.FullName) + $candidatos }
+    }
+
+    $setup = $candidatos | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if (-not $setup) {
+        return @{ Status = 'NaoEncontrado'; Detalhe = 'instalador do OneDrive nao encontrado (ja removido?)' }
+    }
+    try {
+        Start-Process -FilePath $setup -ArgumentList '/uninstall' -Wait -ErrorAction Stop
+        return @{ Status = 'Ok'; Detalhe = ('desinstalador executado ({0})' -f $setup) }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = $_.Exception.Message }
+    }
+}
+
+function Disable-RecallFeature {
+    # So se aplica a Windows 11 Copilot+ (hardware especifico) - o recurso opcional
+    # nao existir no hardware/edicao atual e o resultado ESPERADO na maioria das
+    # maquinas, nao uma falha. A politica de registro (DisableAIDataAnalysis) e
+    # aplicada sempre, independente do recurso opcional existir ou nao.
+    $ok = 0
+    $falhas = @()
+    foreach ($raiz in @('HKCU:\Software\Policies\Microsoft\Windows\WindowsAI', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI')) {
+        try {
+            if (-not (Test-Path $raiz)) { New-Item -Path $raiz -Force -ErrorAction Stop | Out-Null }
+            Set-ItemProperty -Path $raiz -Name 'DisableAIDataAnalysis' -Value 1 -Type DWord -ErrorAction Stop
+            $ok++
+        }
+        catch {
+            $falhas += ('{0}: {1}' -f $raiz, $_.Exception.Message)
+        }
+    }
+
+    $detalheFeature = 'recurso opcional "Recall" nao existe neste hardware'
+    try {
+        $recurso = Get-WindowsOptionalFeature -Online -FeatureName 'Recall' -ErrorAction SilentlyContinue
+        if ($recurso -and $recurso.State -eq 'Enabled') {
+            Disable-WindowsOptionalFeature -Online -FeatureName 'Recall' -NoRestart -ErrorAction Stop | Out-Null
+            $detalheFeature = 'recurso opcional "Recall" desabilitado (requer reinicio)'
+        }
+        elseif ($recurso) {
+            $detalheFeature = 'recurso opcional "Recall" ja estava desabilitado'
+        }
+    }
+    catch {
+        $falhas += ('recurso Recall: {0}' -f $_.Exception.Message)
+    }
+
+    if ($falhas.Count -eq 0) {
+        return @{ Status = 'Ok'; Detalhe = ('politica aplicada; {0}' -f $detalheFeature) }
+    }
+    if ($ok -gt 0) {
+        return @{ Status = 'Parcial'; Detalhe = ('politica parcial; falhas: {0}' -f ($falhas -join ' | ')) }
+    }
+    return @{ Status = 'Falha'; Detalhe = ($falhas -join ' | ') }
+}
+
+function Test-UsuarioDivergente {
+    # Cenario classico de manutencao: usuario padrao logado + credencial de admin no UAC.
+    # Nesse caso HKCU e %TEMP% deste processo pertencem ao ADMIN, nao ao usuario atendido.
+    # Promovida para rodar em TODOS os modos que elevam (nao so Debloat, origem
+    # original) - o mesmo risco vale igual pro WinFaxina, que hoje mexe em HKCU/%TEMP%.
+    try {
+        $explorer = Get-CimInstance -ClassName Win32_Process -Filter "Name='explorer.exe'" -ErrorAction Stop |
+            Select-Object -First 1
+        if (-not $explorer) { return $false }
+        $dono = (Invoke-CimMethod -InputObject $explorer -MethodName GetOwner -ErrorAction Stop).User
+        if ($dono -and $dono -ne $env:USERNAME) {
+            Write-Log ('Atencao: a sessao interativa e do usuario "{0}", mas o script roda como "{1}".' -f $dono, $env:USERNAME) 'Aviso'
+            Write-Log ('Ajustes por usuario (HKCU) e a limpeza de %TEMP% serao aplicados ao perfil de "{0}". Veja "Limitacoes" no README.' -f $env:USERNAME) 'Aviso'
+            return $true
+        }
+    }
+    catch {
+        # Sem explorer.exe (sessao SYSTEM/RMM) ou sem WMI: segue sem o aviso.
+        Write-Verbose ('Nao foi possivel determinar o usuario da sessao interativa: {0}' -f $_.Exception.Message)
+    }
+    return $false
+}
+
 function Get-AcaoDescricao {
     param([Parameter(Mandatory)]$Item)
     switch ($Item.Tipo) {
-        'LimpezaPasta' { 'limparia {0}' -f $Item.Alvo }
+        'Appx'           { 'removeria o pacote {0} (instalado e provisionado)' -f $Item.Alvo }
+        'Servico'        { 'pararia e desativaria o servico {0}' -f $Item.Alvo }
+        'Registro'       { 'aplicaria {0} valor(es) de registro' -f @($Item.Valores).Count }
+        'TarefaAgendada' { 'desativaria {0} tarefa(s) agendada(s)' -f @($Item.Alvos).Count }
+        'LimpezaPasta'   { 'limparia {0}' -f $Item.Alvo }
         'Especial' {
             switch ($Item.Alvo) {
                 'CacheChrome'         { 'limparia o cache do Chrome em todos os perfis' }
@@ -684,6 +1174,9 @@ function Get-AcaoDescricao {
                 'PatchCache'          { 'limparia C:\Windows\Installer\$PatchCache$' }
                 'RecycleBin'          { 'esvaziaria a Lixeira (irreversivel)' }
                 'FilaImpressao'       { 'pararia o Spooler, limparia System32\spool\PRINTERS e reiniciaria o Spooler' }
+                'EfeitosVisuais'      { 'aplicaria o perfil de desempenho (efeitos visuais)' }
+                'OneDrive'            { 'rodaria o desinstalador nativo do OneDrive' }
+                'Recall'              { 'aplicaria a politica DisableAIDataAnalysis e desabilitaria o recurso opcional Recall, se presente' }
             }
         }
     }
@@ -696,7 +1189,11 @@ function Invoke-ItemCatalogo {
         return @{ Status = 'Simulado'; Detalhe = (Get-AcaoDescricao -Item $Item); BytesLiberados = $null }
     }
     switch ($Item.Tipo) {
-        'LimpezaPasta' { return Clear-PastaComRelatorio -Item $Item }
+        'Appx'           { return Remove-BloatApp -Item $Item }
+        'Servico'        { return Disable-BloatService -Item $Item }
+        'Registro'       { return Set-RegistryTweak -Item $Item }
+        'TarefaAgendada' { return Disable-BloatScheduledTask -Item $Item }
+        'LimpezaPasta'   { return Clear-PastaComRelatorio -Item $Item }
         'Especial' {
             switch ($Item.Alvo) {
                 'CacheChrome'        { return Clear-CacheChrome }
@@ -707,6 +1204,9 @@ function Invoke-ItemCatalogo {
                 'PatchCache'         { return Clear-PatchCache }
                 'RecycleBin'         { return Clear-Lixeira }
                 'FilaImpressao'      { return Clear-FilaImpressao }
+                'EfeitosVisuais'     { return Set-VisualEffectsPerformance }
+                'OneDrive'           { return Remove-OneDriveApp }
+                'Recall'             { return Disable-RecallFeature }
             }
         }
     }
@@ -723,6 +1223,14 @@ function Invoke-Selecao {
         Write-Log 'Iniciando execucao...' 'Titulo'
     }
 
+    # Pre-requisito de Remove-BloatApp (Tipo=Appx): inventariar pacotes UMA vez antes
+    # do loop, nao por item. Fica aqui (no motor compartilhado), nao em cada chamador,
+    # para nenhum modo futuro com itens Appx esquecer de preparar isso.
+    $temAppx = @($Itens | Where-Object { $_.Tipo -eq 'Appx' }).Count -gt 0
+    if ($temAppx -and -not $script:Simular) {
+        Get-InventarioAppx
+    }
+
     $contagem = @{ Ok = 0; Parcial = 0; NaoEncontrado = 0; Falha = 0; Simulado = 0 }
     # Relatorio antes/depois: cada item processado entra aqui com o resultado
     # detalhado (nao so a contagem agregada), para exportacao em JSON.
@@ -737,6 +1245,7 @@ function Invoke-Selecao {
         $detalhes.Add([pscustomobject]@{
             Id             = $item.Id
             Categoria      = $item.Categoria
+            Tipo           = $item.Tipo
             Descricao      = $item.Descricao
             Nivel          = $item.Nivel
             Status         = $resultado.Status
@@ -806,25 +1315,32 @@ function Export-RelatorioJson {
 function Initialize-Selecao {
     param(
         [Parameter(Mandatory)][string]$NomePerfil,
-        [Parameter(Mandatory)][string[]]$Categorias
+        [Parameter(Mandatory)][string[]]$Categorias,
+        [Parameter(Mandatory)][string]$VersaoWindows
     )
     $script:Selecionados = New-Object 'System.Collections.Generic.HashSet[string]'
-    foreach ($item in (Get-ItensDoPerfil -NomePerfil $NomePerfil -Categorias $Categorias)) {
+    foreach ($item in (Get-ItensDoPerfil -NomePerfil $NomePerfil -Categorias $Categorias -VersaoWindows $VersaoWindows)) {
         [void]$script:Selecionados.Add($item.Id)
     }
 }
 
 function Get-ContagemCategoria {
-    param([Parameter(Mandatory)][string]$Categoria)
-    $itens = @($script:Catalogo | Where-Object { $_.Categoria -eq $Categoria })
+    param(
+        [Parameter(Mandatory)][string]$Categoria,
+        [Parameter(Mandatory)][string]$VersaoWindows
+    )
+    $itens = @($script:Catalogo | Where-Object { $_.Categoria -eq $Categoria -and (Test-ItemAplicavelAoSO -Item $_ -VersaoWindows $VersaoWindows) })
     $selecionados = @($itens | Where-Object { $script:Selecionados.Contains($_.Id) })
     @{ Selecionados = $selecionados.Count; Total = $itens.Count }
 }
 
 function Show-CategoryMenu {
-    param([Parameter(Mandatory)][string]$Categoria)
+    param(
+        [Parameter(Mandatory)][string]$Categoria,
+        [Parameter(Mandatory)][string]$VersaoWindows
+    )
 
-    $itens = @($script:Catalogo | Where-Object { $_.Categoria -eq $Categoria })
+    $itens = @($script:Catalogo | Where-Object { $_.Categoria -eq $Categoria -and (Test-ItemAplicavelAoSO -Item $_ -VersaoWindows $VersaoWindows) })
     while ($true) {
         Clear-Host
         Write-Host '=============================================================='
@@ -903,11 +1419,13 @@ function Show-Confirmacao {
 function Show-MainMenu {
     param(
         [Parameter(Mandatory)][string[]]$Categorias,
-        [Parameter(Mandatory)][string]$TituloModo
+        [Parameter(Mandatory)][string]$TituloModo,
+        [Parameter(Mandatory)][string]$VersaoWindows
     )
     $perfilAtual = $Perfil
-    Initialize-Selecao -NomePerfil $perfilAtual -Categorias $Categorias
+    Initialize-Selecao -NomePerfil $perfilAtual -Categorias $Categorias -VersaoWindows $VersaoWindows
     $comRestore = -not $SemPontoRestauracao
+    $totalAplicavel = @($script:Catalogo | Where-Object { $Categorias -contains $_.Categoria -and (Test-ItemAplicavelAoSO -Item $_ -VersaoWindows $VersaoWindows) }).Count
 
     while ($true) {
         Clear-Host
@@ -915,10 +1433,10 @@ function Show-MainMenu {
         if ($script:Simular) { $textoSimulacao = 'SIM' }
         Write-Host '=============================================================='
         Write-Host (' CAIXA DE FERRAMENTAS — {0} (v{1})      [SIMULACAO: {2}]' -f $TituloModo.ToUpper(), $script:VERSAO, $textoSimulacao)
-        Write-Host (' Perfil base: {0}   |   Selecionados: {1} de {2} itens' -f $perfilAtual, $script:Selecionados.Count, ($script:Catalogo | Where-Object { $Categorias -contains $_.Categoria }).Count)
+        Write-Host (' Perfil base: {0}   |   Selecionados: {1} de {2} itens' -f $perfilAtual, $script:Selecionados.Count, $totalAplicavel)
         Write-Host '=============================================================='
         for ($i = 0; $i -lt $Categorias.Count; $i++) {
-            $contagem = Get-ContagemCategoria -Categoria $Categorias[$i]
+            $contagem = Get-ContagemCategoria -Categoria $Categorias[$i] -VersaoWindows $VersaoWindows
             Write-Host ('  {0}) {1,-14} ({2,2} de {3,2} selecionados)' -f ($i + 1), $Categorias[$i], $contagem.Selecionados, $contagem.Total)
         }
         $textoRestore = 'NAO'
@@ -939,7 +1457,7 @@ function Show-MainMenu {
                     'Completo'  { 'Agressivo' }
                     'Agressivo' { 'Minimo' }
                 }
-                Initialize-Selecao -NomePerfil $perfilAtual -Categorias $Categorias
+                Initialize-Selecao -NomePerfil $perfilAtual -Categorias $Categorias -VersaoWindows $VersaoWindows
             }
             'R' { $comRestore = -not $comRestore }
             'E' {
@@ -957,7 +1475,7 @@ function Show-MainMenu {
                 if ($opcao -match '^\d{1,2}$') {
                     $posicao = [int]$opcao - 1
                     if ($posicao -ge 0 -and $posicao -lt $Categorias.Count) {
-                        Show-CategoryMenu -Categoria $Categorias[$posicao]
+                        Show-CategoryMenu -Categoria $Categorias[$posicao] -VersaoWindows $VersaoWindows
                     }
                 }
             }
@@ -979,29 +1497,26 @@ if ($WhatIfPreference -and $Modo -notin @('Debloat', 'Faxina', 'Tudo', $null)) {
 }
 
 switch ($Modo) {
-    { $_ -in @('Debloat', 'Tudo') } {
-        Write-Log ("Modo '{0}' ainda sera implementado na Fase 3 deste projeto (fusao do catalogo Debloat10/11)." -f $Modo) 'Erro'
-        exit 9
-    }
-    'Faxina' {
+    { $_ -in @('Debloat', 'Faxina', 'Tudo') } {
         Assert-Admin -ParametrosOriginais $PSBoundParameters
         $script:VersaoWindowsDetectada = Get-VersaoWindows
         Assert-VersaoSuportada -VersaoDetectada $script:VersaoWindowsDetectada
-        Start-Logging -CaminhoPersonalizado $CaminhoLog -Prefixo 'faxina'
+        Start-Logging -CaminhoPersonalizado $CaminhoLog -Prefixo $Modo.ToLower()
+        [void](Test-UsuarioDivergente)
 
-        Write-Log ('Modo Faxina — perfil "{0}"{1}' -f $Perfil, $(if ($NaoInterativo) { ' (nao interativo)' } else { '' })) 'Titulo'
+        Write-Log ('Modo {0} — perfil "{1}"{2}' -f $Modo, $Perfil, $(if ($NaoInterativo) { ' (nao interativo)' } else { '' })) 'Titulo'
         if ($script:ArquivoLog) { Write-Log ('Log: {0}' -f $script:ArquivoLog) 'Info' }
         if ($script:Simular) { Write-Log 'MODO SIMULACAO: nenhuma alteracao sera feita no sistema.' 'Simulacao' }
 
-        $categoriasModo = $script:CategoriasPorModo['Faxina']
+        $categoriasModo = $script:CategoriasPorModo[$Modo]
         $codigoSaida = 0
         try {
             if ($NaoInterativo) {
-                $itensExecucao = @(Get-ItensDoPerfil -NomePerfil $Perfil -Categorias $categoriasModo)
+                $itensExecucao = @(Get-ItensDoPerfil -NomePerfil $Perfil -Categorias $categoriasModo -VersaoWindows $script:VersaoWindowsDetectada)
                 $fazRestore = -not $SemPontoRestauracao
             }
             else {
-                $selecao = Show-MainMenu -Categorias $categoriasModo -TituloModo 'Modo Faxina'
+                $selecao = Show-MainMenu -Categorias $categoriasModo -TituloModo ('Modo {0}' -f $Modo) -VersaoWindows $script:VersaoWindowsDetectada
                 if (-not $selecao) {
                     Write-Log 'Nenhuma acao executada.' 'Info'
                     Stop-LoggingSeAtivo
@@ -1035,6 +1550,17 @@ switch ($Modo) {
             if ($resultado.Contagem.Falha -gt 0) { $codigoSaida = 5 }
             if ($CaminhoRelatorioJson) {
                 Export-RelatorioJson -Caminho $CaminhoRelatorioJson -Detalhes $resultado.Detalhes -Contagem $resultado.Contagem
+            }
+
+            # So pede reinicio se algo que realmente exige (Appx/Servico/Registro/
+            # TarefaAgendada) foi executado - uma sessao so-de-limpeza (LimpezaPasta/
+            # Especial, ex.: rodar so -Modo Faxina) nao deveria mandar reiniciar a toa.
+            $tiposQueExigemReinicio = @('Appx', 'Servico', 'Registro', 'TarefaAgendada')
+            $precisaReiniciar = @($resultado.Detalhes | Where-Object {
+                    $_.Status -in @('Ok', 'Parcial') -and $_.Tipo -in $tiposQueExigemReinicio
+                }).Count -gt 0
+            if ($precisaReiniciar -and -not $script:Simular) {
+                Write-Log 'Recomendado reiniciar o computador para que todas as mudancas tenham efeito completo.' 'Aviso'
             }
         }
         finally {
