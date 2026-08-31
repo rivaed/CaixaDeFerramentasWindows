@@ -123,3 +123,13 @@ jobs:
             exit 1
           }
           Write-Host 'OK: -Modo AdminOculto -AcaoAdmin Status executado com sucesso no runner real.'
+
+      - name: Execucao real (Modo SafeBoot, so -AcaoSafeBoot Status - nao altera o boot do runner)
+        shell: powershell
+        run: |
+          .\CaixaDeFerramentasWindows.ps1 -Modo SafeBoot -NaoInterativo -AcaoSafeBoot Status
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Exit code inesperado: $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host 'OK: -Modo SafeBoot -AcaoSafeBoot Status executado com sucesso no runner real.'

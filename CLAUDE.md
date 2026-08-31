@@ -188,7 +188,13 @@ simplicidade — decisão já validada, não reabrir sem motivo novo.
      senha vazia" isolando `Enable-ContaAdmin` (o guard de `Length -eq 0` é a primeira
      linha, antes de qualquer `Get-LocalUser` — seguro de extrair/chamar sem tocar no
      sistema de contas real).
-   - SafeBoot/Inicializacao — pendentes.
+   - ~~SafeBoot~~ — **feito**. `Get-EstadoSafeBoot`/`Set-SafeBoot`/`Show-AvisoCritico`
+     portadas verbatim; `Confirm-Acao` original (RDP) virou `Confirm-AcaoSafeBoot`
+     (Bloqueio B do plano resolvido — coberto por teste que confirma o bloco do modo
+     NUNCA chama a `Confirm-Acao` genérica, só a própria); `Show-MainMenu` virou
+     `Show-MainMenuSafeBoot`. `Set-SafeBoot` relê o estado real após `bcdedit`, nunca
+     confia só no exit code (coberto por teste AST).
+   - Inicializacao — pendente (última do Grupo B; maior, mais crítica em segurança).
 5. `Show-MenuFerramentas`, passe completo de README/CONTRIBUTING/CHANGELOG, CI unindo as
    etapas reais dos 6 repos originais (uma etapa por modo), PSScriptAnalyzer, validação
    manual em VM nos 6 modos. **Remover a supressão temporária de `PSReviewUnusedParameter`

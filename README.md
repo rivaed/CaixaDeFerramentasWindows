@@ -42,7 +42,7 @@ modo de segurança, administrador oculto e diagnóstico rápido.
 | `Tudo` | Debloat + WinFaxina | ✅ Implementado |
 | `Diagnostico` | DiagnosticoRapidoDePC | ✅ Implementado |
 | `AdminOculto` | ativar-win-admin | ✅ Implementado |
-| `SafeBoot` | SafeBoot-Ninja | Pendente (Fase 4) |
+| `SafeBoot` | SafeBoot-Ninja | ✅ Implementado |
 | `Inicializacao` | StartupAppsNinja | Pendente (Fase 4) |
 | Menu principal (sem `-Modo`) | — | Pendente (Fase 5) |
 

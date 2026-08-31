@@ -1666,6 +1666,117 @@ function Show-MainMenuAdmin {
 
 #endregion
 
+#region SafeBoot (Grupo B — SafeBoot-Ninja) ----------------------------------------
+# Familia "Utilitario pontual elevado": sempre eleva (bcdedit exige admin). Confirmacao
+# tem aviso PROPRIO de RDP (Confirm-AcaoSafeBoot, nao a Confirm-Acao generica — nem
+# Minimo nem Rede iniciam RDP; quem so tem acesso remoto pode ficar sem acesso).
+
+function Get-EstadoSafeBoot {
+    # Le a saida de "bcdedit /enum {current}" e procura a linha "safeboot" —
+    # metodo documentado pela Microsoft para checar o estado antes de alterar.
+    # Sem essa linha = boot normal. Valor "Minimal" ou "Network" = modo ativo.
+    try {
+        $saida = & bcdedit /enum '{current}' 2>&1
+    }
+    catch {
+        return @{ Estado = 'Desconhecido'; Detalhe = $_.Exception.Message }
+    }
+    $linha = $saida | Where-Object { $_ -match '^\s*safeboot\s+(\S+)' }
+    if (-not $linha) {
+        return @{ Estado = 'Normal'; Detalhe = 'nenhuma entrada safeboot — boot normal' }
+    }
+    $valor = $Matches[1]
+    if ($valor -match '^(?i)network') {
+        return @{ Estado = 'Rede'; Detalhe = 'Modo de Seguranca com Rede (safeboot=Network)' }
+    }
+    return @{ Estado = 'Minimo'; Detalhe = 'Modo de Seguranca minimo (safeboot=Minimal)' }
+}
+
+function Set-SafeBoot {
+    param([Parameter(Mandatory)][ValidateSet('Minimo', 'Rede', 'Normal')][string]$Alvo)
+
+    try {
+        switch ($Alvo) {
+            'Minimo' { & bcdedit /set '{current}' safeboot minimal   | Out-Null }
+            'Rede'   { & bcdedit /set '{current}' safeboot network   | Out-Null }
+            'Normal' { & bcdedit /deletevalue '{current}' safeboot   | Out-Null }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            return @{ Status = 'Falha'; Detalhe = ('bcdedit retornou codigo {0}' -f $LASTEXITCODE) }
+        }
+    }
+    catch {
+        return @{ Status = 'Falha'; Detalhe = $_.Exception.Message }
+    }
+
+    # Nunca confia so no exit code do bcdedit - relê o estado e compara com o esperado.
+    $confirmado = Get-EstadoSafeBoot
+    $estadoEsperado = if ($Alvo -eq 'Rede') { 'Rede' } else { $Alvo }
+    if ($confirmado.Estado -eq $estadoEsperado) {
+        return @{ Status = 'Ok'; Detalhe = ('aplicado e verificado: {0}' -f $confirmado.Detalhe) }
+    }
+    return @{ Status = 'Parcial'; Detalhe = ('bcdedit nao reportou erro, mas o estado verificado e "{0}" (esperado "{1}")' -f $confirmado.Estado, $estadoEsperado) }
+}
+
+function Show-AvisoCritico {
+    Write-Log 'ATENCAO: nem o Modo de Seguranca minimo NEM o "com rede" iniciam o RDP.' 'Aviso'
+    Write-Log 'Se voce so tem acesso remoto a esta maquina, ela pode ficar inacessivel apos reiniciar,' 'Aviso'
+    Write-Log 'ate alguem com acesso fisico (ou KVM/iLO/iDRAC) desfazer a mudanca ("Normal").' 'Aviso'
+}
+
+function Confirm-AcaoSafeBoot {
+    # Variante com aviso PROPRIO de RDP - nao e a Confirm-Acao generica (essa e usada
+    # por Inicializacao; contratos diferentes de proposito, ver CLAUDE.md).
+    param([Parameter(Mandatory)][string]$Alvo)
+
+    Clear-Host
+    Write-Host '====================== CONFIRMACAO ============================'
+    Write-Host (' Acao: configurar boot para "{0}"' -f $Alvo)
+    if ($Alvo -ne 'Normal') {
+        Write-Host ''
+        Write-Host ' ATENCAO: nem "Minimo" nem "Rede" iniciam o RDP. Se voce so tem' -ForegroundColor Yellow
+        Write-Host ' acesso remoto a esta maquina, ela pode ficar inacessivel apos' -ForegroundColor Yellow
+        Write-Host ' reiniciar, ate alguem com acesso fisico desfazer a mudanca.' -ForegroundColor Yellow
+        Write-Host ''
+        Write-Host ' O efeito so vale a partir do PROXIMO reinicio, e continua' -ForegroundColor Yellow
+        Write-Host ' valendo em TODO reinicio futuro ate voce escolher "Normal".' -ForegroundColor Yellow
+    }
+    Write-Host '=================================================================='
+    $resposta = Read-Host 'Confirmar? (S/N)'
+    return $resposta -match '^[sS]'
+}
+
+function Show-MainMenuSafeBoot {
+    while ($true) {
+        Clear-Host
+        $estado = Get-EstadoSafeBoot
+        Write-Host '=============================================================='
+        Write-Host (' CAIXA DE FERRAMENTAS — Modo SafeBoot (v{0})' -f $script:VERSAO)
+        Write-Host (' Estado atual: {0}' -f $estado.Detalhe)
+        Write-Host '=============================================================='
+        Write-Host ' 1) Ver estado atual (nao altera nada)'
+        Write-Host ' 2) Ativar Modo de Seguranca minimo (sem rede, sem RDP)'
+        Write-Host ' 3) Ativar Modo de Seguranca com rede (sem RDP tambem — leia o aviso)'
+        Write-Host ' 4) Voltar ao boot normal'
+        Write-Host ' S) Sair'
+        Write-Host '=============================================================='
+        $opcao = (Read-Host 'Opcao').Trim().ToUpper()
+
+        switch ($opcao) {
+            'S' { return $null }
+            '1' {
+                Write-Log ('Estado atual: {0}' -f $estado.Detalhe) 'Info'
+                Read-Host 'Pressione ENTER para continuar' | Out-Null
+            }
+            '2' { if (Confirm-AcaoSafeBoot -Alvo 'Minimo') { return 'Minimo' } }
+            '3' { if (Confirm-AcaoSafeBoot -Alvo 'Rede') { return 'Rede' } }
+            '4' { if (Confirm-AcaoSafeBoot -Alvo 'Normal') { return 'Normal' } }
+        }
+    }
+}
+
+#endregion
+
 #region Fluxo principal ----------------------------------------------------------
 
 if (-not $Modo -and $NaoInterativo) {
@@ -1960,8 +2071,67 @@ switch ($Modo) {
         exit $codigoSaida
     }
     'SafeBoot' {
-        Write-Log "Modo 'SafeBoot' ainda sera implementado na Fase 4 deste projeto." 'Erro'
-        exit 9
+        # Sempre eleva (bcdedit exige admin).
+        Assert-Admin -ParametrosOriginais $PSBoundParameters
+        Start-Logging -CaminhoPersonalizado $CaminhoLog -Prefixo 'safeboot'
+
+        $sufixoAcao = if ($AcaoSafeBoot) { ' — acao "{0}"' -f $AcaoSafeBoot } else { '' }
+        $sufixoModo = if ($NaoInterativo) { ' (nao interativo)' } else { '' }
+        Write-Log ('Modo SafeBoot{0}{1}' -f $sufixoAcao, $sufixoModo) 'Titulo'
+        if ($script:ArquivoLog) { Write-Log ('Log: {0}' -f $script:ArquivoLog) 'Info' }
+
+        $codigoSaida = 0
+        try {
+            if ($AcaoSafeBoot -eq 'Status') {
+                $estadoSafeBoot = Get-EstadoSafeBoot
+                Write-Log ('Estado atual: {0}' -f $estadoSafeBoot.Detalhe) 'Info'
+            }
+            elseif ($NaoInterativo) {
+                if (-not $AcaoSafeBoot) {
+                    Write-Log 'Modo nao interativo exige -AcaoSafeBoot (Status, Minimo, Rede ou Normal).' 'Erro'
+                    exit 2
+                }
+                if (-not $Confirmar) {
+                    Write-Log ('Acao "{0}" exige -Confirmar em modo nao interativo (acao muda o comportamento de boot).' -f $AcaoSafeBoot) 'Erro'
+                    exit 2
+                }
+                if ($AcaoSafeBoot -ne 'Normal') { Show-AvisoCritico }
+                $resultadoSafeBoot = Set-SafeBoot -Alvo $AcaoSafeBoot
+                if ($resultadoSafeBoot.Status -eq 'Ok') { Write-Log $resultadoSafeBoot.Detalhe 'Ok' }
+                elseif ($resultadoSafeBoot.Status -eq 'Parcial') { Write-Log $resultadoSafeBoot.Detalhe 'Aviso' }
+                else { Write-Log $resultadoSafeBoot.Detalhe 'Erro'; $codigoSaida = 5 }
+            }
+            else {
+                if ($AcaoSafeBoot -and $AcaoSafeBoot -ne 'Status') {
+                    if ($AcaoSafeBoot -ne 'Normal') { Show-AvisoCritico }
+                    if (-not (Confirm-AcaoSafeBoot -Alvo $AcaoSafeBoot)) {
+                        Write-Log 'Cancelado pelo usuario.' 'Info'
+                        exit 4
+                    }
+                    $alvoSafeBoot = $AcaoSafeBoot
+                }
+                else {
+                    $alvoSafeBoot = Show-MainMenuSafeBoot
+                    if (-not $alvoSafeBoot) {
+                        Write-Log 'Nenhuma acao executada.' 'Info'
+                        Stop-LoggingSeAtivo
+                        exit 0
+                    }
+                }
+                $resultadoSafeBoot = Set-SafeBoot -Alvo $alvoSafeBoot
+                if ($resultadoSafeBoot.Status -eq 'Ok') { Write-Log $resultadoSafeBoot.Detalhe 'Ok' }
+                elseif ($resultadoSafeBoot.Status -eq 'Parcial') { Write-Log $resultadoSafeBoot.Detalhe 'Aviso' }
+                else { Write-Log $resultadoSafeBoot.Detalhe 'Erro'; $codigoSaida = 5 }
+            }
+        }
+        finally {
+            Stop-LoggingSeAtivo
+        }
+
+        if (-not $NaoInterativo) {
+            Read-Host 'Pressione ENTER para sair' | Out-Null
+        }
+        exit $codigoSaida
     }
     'Inicializacao' {
         Write-Log "Modo 'Inicializacao' ainda sera implementado na Fase 4 deste projeto." 'Erro'

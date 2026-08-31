@@ -5,6 +5,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.0] — não lançado
 
 ### Adicionado
+- **[SafeBoot]** Modo `-Modo SafeBoot` funcional: liga/desliga o Modo de Segurança
+  (mínimo/com rede) via `bcdedit`, sempre **relendo o estado real** depois de aplicar
+  (nunca confia só no exit code). Resolvido o Bloqueio B do plano: `Confirm-Acao`
+  original do SafeBoot-Ninja (`param($Alvo)`, aviso próprio de RDP) virou
+  `Confirm-AcaoSafeBoot` — **não** foi colapsada na `Confirm-Acao` genérica
+  (`param($Descricao)`, usada por Inicializacao), contratos diferentes de propósito.
+  `Show-MainMenu` original renomeado para `Show-MainMenuSafeBoot`. Aviso crítico
+  preservado: nem Mínimo nem Rede iniciam RDP — quem só tem acesso remoto pode ficar
+  sem acesso até alguém com acesso físico desfazer a mudança.
 - **[AdminOculto]** Modo `-Modo AdminOculto` funcional: ativa/desativa a conta
   Administrador embutida, identificada **sempre pelo SID** (termina em `-500`), nunca por
   nome (varia por idioma do Windows). Regra inegociável preservada e testada: nunca ativa
@@ -97,11 +106,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   caso Server-com-build-de-Win10/11) e CI (GitHub Actions: PSScriptAnalyzer + Pester).
 
 ### Notas
-- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto` executam lógica real nesta
-  versão. `SafeBoot`/`Inicializacao` continuam saindo com código 9 e aviso "ainda será
+- `-Modo Faxina`/`Debloat`/`Tudo`/`Diagnostico`/`AdminOculto`/`SafeBoot` executam lógica
+  real nesta versão. `Inicializacao` continua saindo com código 9 e aviso "ainda será
   implementado". Ver "Status de implementação" no README.
-- Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros
-  dos modos ainda não implementados (`Inicializacao`/`SafeBoot`) já
-  existem no `param()` fundido (decisão deliberada — resolver toda
+- Supressão temporária de `PSReviewUnusedParameter` no topo do `.ps1`: os parâmetros do
+  modo `Inicializacao` (o único ainda não implementado) já existem no `param()` fundido
+  (decisão deliberada — resolver toda
   colisão de nome de uma vez só no esqueleto), mas não são consumidos até sua fase
   ser implementada. Remover a supressão na Fase 5.
